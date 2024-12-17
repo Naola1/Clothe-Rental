@@ -58,7 +58,7 @@ class Rental(models.Model):
         ("returned", "Returned"),
         ("overdue", "Overdue"),
     ]
-    # user = models.ForeignKey('user.User', on_delete=models.CASCADE, related_name="rental_records")
+    user = models.ForeignKey('user.User', on_delete=models.CASCADE, related_name="rental_records")
     clothe = models.ForeignKey(Clothes, on_delete=models.CASCADE, related_name="rentals")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     rental_date = models.DateField(default=timezone.now)

@@ -17,6 +17,7 @@ class ClothesAdmin(admin.ModelAdmin):
     search_fields = ["name", "price", "availability", "rating", "stock", "condition", "views_count"]
     list_per_page = 20
 
+
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "category":
             kwargs["queryset"] = Category.objects.filter(children__isnull=True)
@@ -29,6 +30,7 @@ class RentalAdmin(admin.ModelAdmin):
     list_filter = ["status", "duration", "is_extended"]
     search_fields = ["clothe", "status", "rental_date", "duration", "total_price", "return_date", "late_fee", "is_extended"]
     list_per_page = 20
+ 
 
 
 
