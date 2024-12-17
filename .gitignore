@@ -1,1 +1,26 @@
-myenv/
+__pycache__/
+*.py[cod]
+.env
+
+# Virtual Environment
+final/
+
+# SQLite database
+db.sqlite3
+
+# Django migrations
+*/migrations/*.py
+*/migrations/*.pyc
+
+# medias
+*.JPG
+*.jpeg
+medias/
+# IDE specific files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+client.http
+category.txt
+task_to_do.txt
