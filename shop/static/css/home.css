@@ -1,0 +1,122 @@
+/* Main Image and Buttons */
+.main-image {
+    position: relative;
+    height: 100%;
+    width: 100%;
+  }
+  
+  .main-image img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+  
+  /* Buttons */
+  .next-btn, .prev-btn {
+    background: linear-gradient(90deg, #4f46e5, #3b82f6); /* Gradient background */
+    color: white; /* Text color */
+    font-weight: bold;
+    padding: 0.75rem 1.25rem; /* Increased padding for a bolder look */
+    border-radius: 0.5rem; /* Rounded corners */
+    transition: background 0.3s, transform 0.3s; /* Smooth transition */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Shadow effect */
+  }
+  
+  .next-btn:hover, .prev-btn:hover {
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8); /* Darker gradient on hover */
+    transform: translateY(-2px); /* Slight lift on hover */
+  }
+  
+  /* Thumbnail Images */
+  .thumbnail-images img {
+    width: 8rem; /* Thumbnail width */
+    height: 8rem; /* Thumbnail height */
+    margin: 0 0.5rem; /* Margin between thumbnails */
+    cursor: pointer;
+    border: 2px solid #ffffff; /* White border */
+    border-radius: 0.5rem; /* Rounded corners */
+    transition: transform 0.3s; /* Transition for hover effect */
+  }
+  
+  .thumbnail-images img:hover {
+    transform: scale(1.05); /* Scale up on hover */
+  }
+  
+  /* Available Clothes Section */
+  .cloth-item img {
+    border-radius: 0.5rem; /* Rounded corners */
+    height: 16rem; /* Fixed height */
+    object-fit: contain;
+  }
+  
+  .cloth-item {
+    background-color: #ffffff; /* White background */
+    border-radius: 0.5rem; /* Rounded corners */
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); /* More pronounced shadow */
+    transition: transform 0.3s, box-shadow 0.3s; /* Transition for hover effect */
+  }
+  
+  .cloth-item:hover {
+    transform: translateY(-2px); /* Lift effect on hover */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Shadow increase on hover */
+  }
+  
+  .cloth-item .p-4 {
+    padding: 1rem;
+  }
+  
+  .cloth-item h3 {
+    font-size: 1.25rem; /* Font size */
+    font-weight: 600; /* Font weight */
+  }
+  
+  /* Pagination */
+  .pagination a {
+    background-color: #2563eb; /* Blue background */
+    color: #ffffff; /* White text */
+    padding: 0.5rem 1rem; /* Padding */
+    border-radius: 0.5rem; /* Rounded corners */
+    transition: background 0.3s; /* Transition for hover effect */
+  }
+  
+  .pagination a:hover {
+    background-color: #1d4ed8; /* Darker blue on hover */
+  }
+  
+  /* Details Section */
+  .price-summary {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .price-row.total {
+    font-size: 1rem; /* Font size */
+    font-weight: bold; /* Font weight */
+  }
+  
+  /* Payment Modal */
+  #paymentModal {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(75, 85, 99, 0.7); /* Darker overlay */
+    display: none;
+    backdrop-filter: blur(5px); /* Blur effect */
+  }
+  
+  #paymentModal .payment-summary .flex {
+    justify-content: space-between; /* Flex layout for summary */
+  }
+  
+  /* Rent Button */
+  .rent-button {
+    background: linear-gradient(90deg, #4f46e5, #3b82f6); /* Gradient background */
+    color: white; /* White text */
+    padding: 0.5rem 1rem; /* Padding */
+    border-radius: 0.5rem; /* Rounded corners */
+    transition: background 0.3s, transform 0.3s; /* Transition effect */
+  }
+  
+  .rent-button:hover {
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8); /* Darker gradient on hover */
+    transform: translateY(-2px); /* Lift effect on hover */
+  }
