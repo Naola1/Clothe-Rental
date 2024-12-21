@@ -1,0 +1,101 @@
+{% extends 'main.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/edit-profile.css' %}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-100 min-h-screen flex flex-col justify-between py-10">
+    <div class="flex-grow flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-lg p-8 w-full max-w-3xl">
+            <h1 class="text-3xl font-bold text-center text-black mb-6">Edit Profile</h1>
+            
+            <form method="post" enctype="multipart/form-data" class="edit-profile-form" novalidate>
+                {% csrf_token %}
+                
+                {% if form.errors %}
+                    <div class="alert text-red-500 text-center mb-4">
+                        Please correct the errors below.
+                    </div>
+                {% endif %}
+                
+                <div class="mb-4 flex items-center">
+                    <label for="profile_picture" class="block mb-2 text-gray-700 w-1/3">Profile Picture</label>
+                    <div class="w-2/3 flex items-center">
+                        <div class="relative">
+                            <img src="{{ user.profile_picture.url }}" 
+                                 alt="{{ user.username }}'s profile picture" 
+                                 class="h-20 w-20 rounded-full object-cover border-2 border-gray-300 mr-4" 
+                                 loading="lazy" 
+                                 onerror="this.onerror=null; this.src='/static/images/default-avatar.png';">
+                            <input type="file" name="profile_picture" id="profile_picture" class="absolute inset-0 opacity-0 cursor-pointer" accept="image/*">
+                        </div>
+                        <span class="cursor-pointer text-blue-500">Change Picture</span>
+                    </div>
+                </div>
+
+                <div class="mb-4 flex items-center">
+                    <label for="{{ form.first_name.id_for_label }}" class="block mb-2 text-gray-700 w-1/3">First Name</label>
+                    <input type="text" name="first_name" id="{{ form.first_name.id_for_label }}" class="form-control w-full p-2 border border-gray-300 rounded-md" value="{{ form.first_name.value|default:'' }}">
+                </div>
+                
+                <div class="mb-4 flex items-center">
+                    <label for="{{ form.last_name.id_for_label }}" class="block mb-2 text-gray-700 w-1/3">Last Name</label>
+                    <input type="text" name="last_name" id="{{ form.last_name.id_for_label }}" class="form-control w-full p-2 border border-gray-300 rounded-md" value="{{ form.last_name.value|default:'' }}">
+                </div>
+                
+                <div class="mb-4 flex items-center">
+                    <label for="{{ form.username.id_for_label }}" class="block mb-2 text-gray-700 w-1/3">Username</label>
+                    <input type="text" name="username" id="{{ form.username.id_for_label }}" class="form-control w-full p-2 border border-gray-300 rounded-md" value="{{ form.username.value|default:'' }}">
+                </div>
+                
+                <div class="mb-4 flex items-center">
+                    <label for="{{ form.gender.id_for_label }}" class="block mb-2 text-gray-700 w-1/3">Gender</label>
+                    <div class="w-2/3">
+                        {{ form.gender }}
+                    </div>
+                </div>
+                
+                <div class="mb-4 flex items-center">
+                    <label for="{{ form.phone_number.id_for_label }}" class="block mb-2 text-gray-700 w-1/3">Phone Number</label>
+                    <input type="text" name="phone_number" id="{{ form.phone_number.id_for_label }}" class="form-control w-full p-2 border border-gray-300 rounded-md" value="{{ form.phone_number.value|default:'' }}">
+                </div>
+                
+                <div class="mb-4 flex items-center">
+                    <label for="{{ form.address.id_for_label }}" class="block mb-2 text-gray-700 w-1/3">Address</label>
+                    <textarea name="address" id="{{ form.address.id_for_label }}" class="form-control w-full p-2 border border-gray-300 rounded-md">{{ form.address.value }}</textarea>
+                </div>
+                
+                <div class="flex justify-between mt-4">
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded transition duration-300">Save Changes</button>
+                    <a href="{% url 'profile' %}" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-4 py-2 rounded transition duration-300">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer class="bg-gray-800 text-white py-4 text-center">
+        <p>&copy; 2024 Your Company. All rights reserved.</p>
+    </footer>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/edit-profile.js' %}"></script>
+<script>
+    // Optional: Preview image functionality (if needed)
+    document.getElementById('profile_picture').addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.querySelector('img');
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+</script>
+{% endblock %}

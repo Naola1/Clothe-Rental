@@ -1,0 +1,48 @@
+{% extends 'main.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/profile.css' %}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<div class="bg-gray-100 text-black min-h-screen flex flex-col justify-between">
+    <div class="flex-grow flex items-center justify-center py-10">
+        <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-3xl">
+            <h1 class="text-3xl font-bold text-center text-black mb-4">My Profile</h1>
+            
+            <div class="flex items-center mb-4">
+                {% if user.profile_picture %}
+                    <img src="{{ user.profile_picture.url }}" 
+                         alt="{{ user.username }}'s profile picture" 
+                         class="h-32 w-32 rounded-full object-cover mr-4" 
+                         loading="lazy">
+                {% else %}
+                    <div class="w-32 h-32 rounded-full bg-gray-300 flex items-center justify-center text-4xl text-black">
+                        {{ user.username.0|upper }}
+                    </div>
+                {% endif %}
+                
+                <div class="user-info">
+                    <p class="text-lg text-black-900"><strong>Username:</strong> {{ user.username }}</p>
+                    <p class="text-lg text-black"><strong>Email:</strong> {{ user.email }}</p>
+                    <p class="text-lg text-black-900"><strong>Full Name:</strong> {{ user.get_full_name }}</p>
+                    <p class="text-lg text-black-900"><strong>Gender:</strong> {{ user.get_gender_display }}</p>
+                    <p class="text-lg text-black-900"><strong>Phone:</strong> {{ user.phone_number|default:"Not provided" }}</p>
+                    <p class="text-lg text-black-900"><strong>Address:</strong> {{ user.address|default:"Not provided" }}</p>
+                </div>
+            </div>
+            
+            <div class="flex justify-center space-x-4">
+                <a href="{% url 'edit_profile' %}" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-2 rounded transition duration-300">Edit Profile</a>
+                <a href="{% url 'change_password' %}" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-6 py-2 rounded transition duration-300">Change Password</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/profile.js' %}"></script>
+{% endblock %}
