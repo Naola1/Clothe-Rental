@@ -3,7 +3,7 @@
         <div class="container mx-auto flex justify-between items-center py-4 px-6">
             <!-- Logo -->
             <div class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition duration-300">
-                <a href="#" class="cursor-pointer">Lily's Closet</a>
+                <a href="{% url 'home' %}" class="cursor-pointer">Lily's Closet</a>
             </div>
 
             <!-- Navigation Links -->
@@ -14,10 +14,10 @@
             </div>
 
             <!-- Search and User Section -->
-            <div class="flex items-center space-x-6">
+            <div class="flex items-center space-x-4"> <!-- Adjusted space-x-6 to space-x-4 -->
                 <!-- Search Bar -->
                 <div class="relative group">
-                    <form action="#" method="get" class="w-full">
+                    <form action="{% url 'home' %}" method="get" class="w-full">
                         <input type="text" 
                                name="search"
                                value="{{ search_query }}"
@@ -36,11 +36,21 @@
                     </form>
                 </div>
 
-                <!-- User Profile Section -->
                 {% if user.is_authenticated %}
+                    <!-- Cart Icon -->
+                    <div class="relative group">
+                        <a href="#" class="flex items-center space-x-2 text-white hover:text-blue-400 transition duration-300">
+                            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h18l-1.5 9H5.25L3 3zm0 0h18M6 21a3 3 0 100-6 3 3 0 000 6zm12 0a3 3 0 100-6 3 3 0 000 6z" />
+                            </svg>
+                            <span class="font-medium">Cart</span>
+                        </a>
+                    </div>
+
+                    <!-- User Profile Section -->
                     <div class="relative group">
                         <!-- Profile Picture and Name -->
-                        <a href="#" class="flex items-center space-x-3 cursor-pointer">
+                        <a href="{% url 'profile' %}" class="flex items-center space-x-3 cursor-pointer">
                             {% if user.profile_picture %}
                                 <img src="{{ user.profile_picture.url }}" 
                                      alt="{{ user.username }}" 
@@ -60,27 +70,27 @@
                             </span>
                         </a>
 
-                        <!-- Futuristic Dropdown Menu -->
+                        <!--  Dropdown Menu -->
                         <div class="absolute right-0 z-10 mt-2 w-56 rounded-lg shadow-xl bg-black ring-1 
                         ring-gray-800 transition-transform duration-300 ease-in-out transform scale-95 
-                        opacity-0 group-hover:scale-100 group-hover:opacity-100">
-                                <a href="#" 
+                        opacity-0 group-hover:scale-100 group-hover:opacity-100" >
+                                <a href="{% url 'profile' %}" 
                                    class="block px-4 py-2 text-gray-200 hover:bg-blue-600 
                                           hover:text-white rounded transition duration-300">
                                     My Profile
                                 </a>
-                                <a href="#" 
+                                <a href="{% url 'edit_profile' %}" 
                                    class="block px-4 py-2 text-gray-200 hover:bg-blue-600 
                                           hover:text-white rounded transition duration-300">
                                     Edit Profile
                                 </a>
                                 <a href="#" 
-                                class="block px-4 py-2 text-gray-200 hover:bg-blue-600 
-                                       hover:text-white rounded transition duration-300">
-                                 Rented Items
+                                   class="block px-4 py-2 text-gray-200 hover:bg-blue-600 
+                                          hover:text-white rounded transition duration-300">
+                                    Rented Items
                                 </a>
                                 <hr class="my-2 border-gray-700">
-                                <a href="#" 
+                                <a href="{% url 'logout' %}" 
                                    class="block px-4 py-2 text-red-500 hover:bg-red-700 
                                           hover:text-white rounded transition duration-300">
                                     Logout
@@ -90,13 +100,13 @@
                     </div>
                 {% else %}
                     <div class="space-x-4">
-                        <a href="#" 
+                        <a href="{% url 'register' %}" 
                            class="text-white bg-gradient-to-r from-blue-500 to-purple-600 
                                   px-4 py-2 rounded-full hover:from-blue-600 hover:to-purple-700 
                                   transition duration-300">
                             Sign Up
                         </a>
-                        <a href="#" 
+                        <a href="{% url 'login' %}" 
                            class="text-white border border-blue-500 px-4 py-2 
                                   rounded-full hover:bg-blue-500 transition duration-300">
                             Login
