@@ -1,0 +1,74 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <!-- BOXICONS -->
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="{% static 'css/login.css' %}?v=1">
+</head>
+<body>
+   <div class="wrapper">
+     <div class="login-box register-container">
+         <div class="login-header">Register</div>
+         <form method="POST" action="{% url 'register' %}">
+             {% csrf_token %}
+             <div class="input-box">
+                <input type="text" id="username" class="input-field {% if form.username.errors %}error{% endif %}" name="username" required>
+                <label for="username" class="label">Username</label>
+                <i class="bx bx-user icon"></i>
+                {% if form.username.errors %}
+                    <div class="error-message">
+                        {% for error in form.username.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+             <div class="input-box">
+                 <input type="email" id="email" class="input-field {% if form.email.errors %}error{% endif %}" name="email" required>
+                 <label for="email" class="label">Email</label>
+                 <i class="bx bx-envelope icon"></i>
+                 {% if form.email.errors %}
+                     <div class="error-message">
+                         {% for error in form.email.errors %}
+                             {{ error }}
+                         {% endfor %}
+                     </div>
+                 {% endif %}
+             </div>
+             <div class="input-box">
+                 <input type="password" id="password" class="input-field {% if form.password.errors %}error{% endif %}" name="password" required>
+                 <label for="password" class="label">Password</label>
+                 <i class="bx bx-lock-alt icon"></i>
+                 {% if form.password.errors %}
+                     <div class="error-message">
+                         {% for error in form.password.errors %}
+                             {{ error }}
+                         {% endfor %}
+                     </div>
+                 {% endif %}
+             </div>
+             <div class="input-box">
+                 <input type="password" id="confirm_password" class="input-field {% if form.confirm_password.errors %}error{% endif %}" name="confirm_password" required>
+                 <label for="confirm_password" class="label">Confirm Password</label>
+                 <i class="bx bx-lock icon"></i>
+                 {% if form.confirm_password.errors %}
+                     <div class="error-message">
+                         {% for error in form.confirm_password.errors %}
+                             {{ error }}
+                         {% endfor %}
+                     </div>
+                 {% endif %}
+             </div>
+             <button type="submit" class="input-submit">Register</button>
+             <div class="register">
+                 <span>Already have an account? <a href="{% url 'login' %}">Login</a></span>
+             </div>
+         </form>
+     </div>
+   </div>
+</body>
+</html>

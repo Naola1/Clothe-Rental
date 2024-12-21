@@ -1,0 +1,200 @@
+    /* POPPINS FONT */
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Poppins', sans-serif;
+    }
+    
+    /* ===== COLOR VARIABLES ===== */
+    :root {
+        --primary-color: #c6c3c3;
+        --second-color: #ffffff;
+        --black-color: #000000;
+    }
+    
+    /* ===== BODY - BACKGROUND IMAGE ===== */
+    /* ===== Reusable CSS ===== */
+    html, body {
+        background-image: url('/static/images/bg.jpg') !important;
+        background-position: center;
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+    }
+    
+    a {
+        text-decoration: none;
+        color: var(--second-color);
+    }
+    
+    /* ===== HOVER ===== */
+    a:hover {
+        text-decoration: underline;
+    }
+    
+    /* ===== WRAPPER ===== */
+    .wrapper {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background-color: rgba(0, 0, 0, 0.2);
+    }
+    
+    .login-box {
+        position: relative;
+        width: 400px;
+        backdrop-filter: blur(25px);
+        border: 2px solid var(--primary-color);
+        border-radius: 10px;
+        padding: 4em 2em;
+        color: var(--second-color);
+        box-shadow: 0px 0px 10px 2px rgba(0, 0, 0, 0.3);
+    }
+    
+    .login-header {
+        font-size: 30px;
+        font-weight: 600;
+        text-align: center;
+        margin-bottom: 2em;
+    }
+    
+    .input-box {
+        position: relative;
+        margin-bottom: 1.5em;
+        
+    }
+    
+    .input-field {
+        width: 100%;
+        height: 50px;
+        font-size: 16px;
+        background: transparent;
+        color: var(--second-color);
+        padding-inline: 20px 40px;
+        border: 1px solid var(--primary-color);
+        border-radius: 25px;
+        outline: none;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .label {
+        position: absolute;
+        top: 50%;
+        left: 20px;
+        transform: translateY(-50%);
+        transition: .25s;
+    }
+    
+    .input-field:focus ~ .label,
+    .input-field:valid ~ .label {
+        top: 0;
+        font-size: 14px;
+        background-color: var(--primary-color);
+        border-radius: 20px;
+        color: var(--black-color);
+        padding: 0 10px;
+        border-color: var(--second-color);
+        box-shadow: 0 0 8px var(--second-color);
+    }
+    
+    .icon {
+        position: absolute;
+        top: 50%;
+        right: 20px;
+        transform: translateY(-50%);
+        font-size: 18px;
+    }
+    
+    .remember-forgot {
+        display: flex;
+        justify-content: space-between;
+        font-size: 14px;
+        margin-bottom: 1.5em;
+    }
+    
+    .input-submit {
+        width: 100%;
+        height: 45px;
+        font-size: 16px;
+        font-weight: 500;
+        background: var(--primary-color);
+        color: var(--black-color);
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        transition: .3s;
+    }
+    
+    .input-submit:hover {
+        background: var(--second-color);
+        color: var(--primary-color);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    
+    .register {
+        text-align: center;
+        font-size: 14px;
+    }
+    
+    .register a {
+        font-weight: 500;
+    }
+    
+    @media only screen and (max-width: 564px) {
+        .wrapper {
+            padding: 20px;
+        }
+    
+        .login-box {
+            width: 100%;
+            padding: 4em 1.5em;
+        }
+    }
+    
+/* Specific to registration page */
+.login-box.register {
+    border-color: var(--second-color);
+}
+
+/* Increase width for the registration container */
+.register-container {
+    width: 450px; /* Adjust the width as needed */
+    padding: 4em 2em; /* Optional: Update padding for better spacing */
+}
+
+/* Media query for smaller screens */
+@media only screen and (max-width: 564px) {
+    .register-container {
+        width: 100%; /* Ensure it remains responsive */
+        padding: 4em 1.5em;
+    }
+}
+
+/* html, body {
+    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('/static/images/bg.jpeg') no-repeat center center fixed;
+    background-size: cover;
+} */
+
+.error-message {
+    color: red;
+    font-size: 0.8em;
+    position: absolute;
+    top: -20px;
+    left: 0;
+}
+
+.input-field.error {
+    border-color: red;
+}
+.input-field.error:focus {
+    outline-color: red;
+}
+
+
+
+
