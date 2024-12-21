@@ -5,6 +5,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_protect
+from .forms import RentalForm
 
 from .models import Clothes, Rental, Category
 from .filters import ClotheFilter
@@ -62,3 +63,52 @@ def home_view(request):
         'search_query': search_query
     }
     return render(request, 'shop/home.html', context)
+
+def cloth_detail_view(request, cloth_id):
+    cloth = get_object_or_404(Clothes, id=cloth_id)
+    related_clothes_list = Clothes.objects.filter(category=cloth.category).exclude(id=cloth_id)
+    paginator = Paginator(related_clothes_list, 10)
+    page_number = request.GET.get('page', 1)
+    try:
+        related_clothes = paginator.page(page_number)
+    except PageNotAnInteger:
+        related_clothes = paginator.page(1)
+    except EmptyPage:
+        related_clothes = paginator.page(paginator.num_pages)
+
+    form = RentalForm()
+    existing_rental = None
+    if request.user.is_authenticated:
+        existing_rental = Rental.objects.filter(user=request.user, clothe_id=cloth.id, status='active').first()
+
+    if request.method == "POST" and request.user.is_authenticated:
+        form = RentalForm(request.POST)
+        if existing_rental:
+            messages.warning(request, 'You have already rented this item.')
+        elif form.is_valid() and cloth.stock > 0:
+            rental_data = form.cleaned_data
+            rental_data.update({
+                'user_id': request.user.id,
+                'cloth_id': cloth.id,
+                'total_price': form.cleaned_data['duration'] * cloth.price
+            })
+            return redirect(
+                'initiate_payment', 
+                cloth_id=cloth.id, 
+                duration=rental_data['duration'], 
+                rental_date=rental_data['rental_date'], 
+                return_date=rental_data['return_date'], 
+                total_price=rental_data['total_price']
+            )
+        else:
+            messages.error(request, 'This item is out of stock.')
+
+    context = {
+        'cloth': cloth,
+        'related_clothes': related_clothes,
+        'form': form,
+        'price': float(cloth.price),
+        'page_obj': related_clothes,
+        'existing_rental': existing_rental
+    }
+    return render(request, 'shop/detail.html', context)
