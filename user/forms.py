@@ -46,3 +46,40 @@ class UserRegistrationForm(forms.ModelForm):
             self.add_error('confirm_password', "Passwords do not match")
 
         return cleaned_data
+
+class LoginForm(forms.Form):
+    email = forms.EmailField(
+        max_length=255, 
+        label="Email",
+        error_messages={
+            'required': 'Email is required.',
+            'invalid': 'Enter a valid email address.'
+        }
+    )
+    password = forms.CharField(
+        widget=forms.PasswordInput, 
+        label="Password",
+        error_messages={
+            'required': 'Password is required.',
+        }
+    )
+
+class UserProfileUpdateForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = [
+            'first_name', 
+            'last_name', 
+            'username', 
+            'gender', 
+            'phone_number', 
+            'address', 
+            'profile_picture'
+        ]
+
+    def clean_username(self):
+        username = self.cleaned_data['username']
+        # Check if username is unique, excluding current user
+        if User.objects.exclude(pk=self.instance.pk).filter(username=username).exists():
+            raise forms.ValidationError("This username is already in use.")
+        return username
