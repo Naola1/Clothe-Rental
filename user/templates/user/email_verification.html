@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f7;
+            margin: 0;
+            padding: 0;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border: 1px solid #dddddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .email-header {
+            background-color: #007bff;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+            font-size: 24px;
+        }
+        .email-body {
+            padding: 20px;
+            color: #333333;
+            line-height: 1.5;
+        }
+        .email-button {
+            display: block;
+            width: fit-content;
+            margin: 20px auto;
+            padding: 12px 25px;
+            background-color: #007bff;
+            color: #ffffff; /* Ensure text color is white */
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 16px;
+            text-align: center;
+        }
+        .email-button:hover {
+            background-color: #acb3bb;
+        }
+        .email-footer {
+            background-color: #f4f4f7;
+            padding: 10px 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #888888;
+        }
+        .email-footer a {
+            color: #007bff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="email-header">
+            Verify Your Email Address
+        </div>
+
+        <!-- Body -->
+        <div class="email-body">
+            <p>Hi {{ user.username }},</p>
+            <p>Thank you for signing up with <strong>FASHIONFLEX</strong>. To complete your registration and activate your account, please verify your email address by clicking the button below:</p>
+            <a href="http://{{ domain }}/activate/{{ uid }}/{{ token }}/" class="email-button">Verify Email</a>
+            <p>If the button above doesn't work, copy and paste the following URL into your browser:</p>
+            <p><a href="http://{{ domain }}/activate/{{ uid }}/{{ token }}/" style="color: #007bff;">http://{{ domain }}/activate/{{ uid }}/{{ token }}/</a></p>
+            <p>If you didn’t create an account with us, you can safely ignore this email.</p>
+            <p>Best regards,<br>The YourWebsiteName Team</p>
+        </div>
+
+        <!-- Footer -->
+        <div class="email-footer">
+            <p>If you have any questions, please contact our support team at <a href="localhost.com">localhost.com</a>.</p>
+            <p>&copy; 2024 YourWebsiteName. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
