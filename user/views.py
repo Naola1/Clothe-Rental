@@ -53,6 +53,7 @@ def register_view(request):
 
     return render(request, 'user/register.html', {'form': form})
 
+
 def activate_user(request, uidb64, token):
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
@@ -67,7 +68,7 @@ def activate_user(request, uidb64, token):
         return redirect('login')
     else:
         messages.error(request, 'Invalid activation link.')
-        return redirect('login')
+        return redirect('login')    
 
 
 def login_view(request):
@@ -185,7 +186,7 @@ def change_password_view(request):
         form = PasswordChangeForm(request.user, request.POST)
         if form.is_valid():
             user = form.save()
-            update_session_auth_hash(request, user)
+            update_session_auth_hash(request, user)  
             messages.success(request, 'Password updated successfully.')
             return redirect('profile')
         else:
@@ -194,4 +195,5 @@ def change_password_view(request):
                     messages.error(request, f"{field.capitalize()}: {error}")
     else:
         form = PasswordChangeForm(request.user)
+    
     return render(request, 'user/change_password.html', {'form': form})
