@@ -1,0 +1,153 @@
+{% extends 'main.html' %}
+{% load static tailwind_tags %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+    <!-- Cart Section -->
+    <div class="bg-gray-100 text-gray-800">
+        <div class="container mx-auto py-10">
+            <h2 class="text-3xl font-bold text-center mb-6">Shopping Bag</h2>
+
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="mb-4">
+                    <span class="text-lg font-semibold">{{ cart.items.count }} Items in your bag</span>
+                </div>
+
+                {% if cart and cart.items.count > 0 %}
+                    <table class="min-w-full bg-white">
+                        <thead>
+                            <tr class="border-b">
+                                <th class="py-4 text-left">Product</th>
+                                <th class="py-4 text-left">Price per day</th>
+                                <th class="py-4 text-left">Quantity</th>
+                                <th class="py-4 text-left">Total Price</th>
+                                <th class="py-4 text-left">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in cart.items.all %}
+                                <tr class="border-b hover:bg-gray-100" data-item-id="{{ item.id }}">
+                                    <td class="py-4 px-2 flex items-center">
+                                        <img src="{{ item.clothes.image.url }}" alt="{{ item.clothes.name }}" class="h-16 w-16 object-cover rounded mr-4">
+                                        <span>{{ item.clothes.name }}</span>
+                                    </td>
+                                    <td class="py-4 px-2">${{ item.clothes.price }}</td>
+                                    <td class="py-4 px-2">
+                                        <div class="flex items-center">
+                                            <button class="bg-gray-200 text-gray-700 rounded-l px-2" onclick="changeQuantity('{{ item.id }}', -1)">-</button>
+                                            <input type="number" id="quantity-{{ item.id }}" value="{{ item.quantity }}" min="1" class="w-16 text-center border rounded" onchange="updateTotal('{{ item.id }}')">
+                                            <button class="bg-gray-200 text-gray-700 rounded-r px-2" onclick="changeQuantity('{{ item.id }}', 1)">+</button>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-2" id="total-{{ item.id }}">${{ item.get_total_price }}</td>
+                                    <td class="py-4 px-2">
+                                        <form action="{% url 'remove_from_cart' item.clothes.id %}" method="post">
+                                            {% csrf_token %}
+                                            <button type="submit" class="text-red-500 hover:text-red-600">Remove</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <div class="mt-6 flex justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold">Cart Summary</h3>
+                            <div class="flex justify-between mt-2">
+                                <span>Subtotal:</span>
+                                <span id="subtotal">${{ cart_total }}</span>
+                            </div>
+                        </div>
+                        <div class="bg-yellow-200 rounded-lg p-4">
+                            <h3 class="text-lg font-bold">Total:</h3>
+                            <span class="text-2xl font-semibold" id="total-price">${{ cart_total }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 text-center">
+                        <form action="{% url 'initiate_payment' %}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="total_price" value="{{ cart_total }}">
+                            {% for item in cart.items.all %}
+                                <input type="hidden" name="cloth_id" value="{{ item.clothes.id }}">
+                                <input type="hidden" name="duration" value="{{ item.quantity }}">
+                                <input type="hidden" name="rental_date" value="{{ today_date|date:'Y-m-d' }}">
+                                <input type="hidden" name="return_date" value="{{ return_date|date:'Y-m-d' }}">
+                            {% endfor %}
+                            <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-2 rounded transition duration-300">
+                                Proceed to Checkout
+                            </button>
+                        </form>
+                    </div>
+                {% else %}
+                    <p class="text-center text-gray-400">Your cart is empty.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        function changeQuantity(itemId, change) {
+            const quantityInput = document.getElementById(`quantity-${itemId}`);
+            let newQuantity = parseInt(quantityInput.value) + change;
+            if (newQuantity < 1) newQuantity = 1; // Prevent negative quantity
+            quantityInput.value = newQuantity;
+            updateTotal(itemId);
+
+            // Send AJAX request to update quantity in backend
+            fetch('/cart/update/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    item_id: itemId,
+                    quantity: newQuantity
+                })
+            });
+        }
+
+        function updateTotal(itemId) {
+            const quantity = document.getElementById(`quantity-${itemId}`).value;
+            const pricePerDay = parseFloat(document.querySelector(`tr[data-item-id="${itemId}"] td:nth-child(2)`).textContent.replace('$', ''));
+            const totalPrice = (pricePerDay * quantity).toFixed(2);
+            document.getElementById(`total-${itemId}`).textContent = `$${totalPrice}`;
+
+            // Update subtotal and total
+            let subtotal = 0;
+            document.querySelectorAll('tbody tr').forEach(row => {
+                const total = parseFloat(row.querySelector('td:nth-child(4)').textContent.replace('$', ''));
+                subtotal += total;
+            });
+            document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+            document.getElementById('total-price').textContent = `$${subtotal.toFixed(2)}`;
+            
+            // Update hidden total price input for payment
+            document.querySelector('input[name="total_price"]').value = subtotal.toFixed(2);
+        }
+
+        // Helper function to get CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+{% endblock %}
