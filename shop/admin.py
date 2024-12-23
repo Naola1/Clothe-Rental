@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Clothes, Rental, Category
+from .models import Clothes, Rental, Category, Cart, CartItem
 
 # Register your models here.
 @admin.register(Category)
@@ -31,6 +31,17 @@ class RentalAdmin(admin.ModelAdmin):
     search_fields = ["clothe", "status", "rental_date", "duration", "total_price", "return_date", "late_fee", "is_extended"]
     list_per_page = 20
  
+class CartItemInline(admin.TabularInline):
+    model = CartItem
+    extra = 1  
 
+@admin.register(Cart)
+class CartAdmin(admin.ModelAdmin):
+    inlines = [CartItemInline]  
+
+@admin.register(CartItem)
+class CartItemAdmin(admin.ModelAdmin):
+    list_display = ('cart', 'clothes', 'quantity')  
+    search_fields = ('clothes__name',)
 
 

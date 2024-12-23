@@ -100,3 +100,19 @@ class Rental(models.Model):
 
     def __str__(self):
         return f"Rental of {self.clothe.name} for {self.duration} days"
+
+# Cart Model
+class Cart(models.Model):
+    user = models.ForeignKey('user.User', on_delete=models.CASCADE, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
+    clothes = models.ForeignKey(Clothes, on_delete=models.CASCADE)  # lowercase is more conventional
+    quantity = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        unique_together = ('cart', 'clothes')
+
+    def get_total_price(self):
+        return self.clothes.price * self.quantity
