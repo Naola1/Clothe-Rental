@@ -69,8 +69,16 @@
                         class="w-full h-68 object-cover rounded-md shadow-md hover:shadow-xl transition-shadow duration-300"
                     >
                     <!-- Text Section -->
-                    <div class="p-4">
-                        <h3 class="text-xl font-semibold">{{ cloth.name }}</h3>
+                    <div class="p-4 flex flex-col">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xl font-semibold">{{ cloth.name }}</h3>
+                            <form action="{% url 'add_to_cart' cloth.id %}" method="post">
+                                {% csrf_token %}
+                                <button type="submit" class="bg-green-500 rounded-full hover:bg-blue-600 text-white font-semibold text-sm py-1 px-2 rounded transition duration-300">
+                                    Add to cart
+                                </button>
+                            </form>
+                        </div>
                         <p class="text-gray-600">${{ cloth.price }} per day</p>
                         <a href="{% url 'cloth_detail' cloth.id %}" class="block bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 mt-2 rounded-full transition duration-300 hover:from-blue-600 hover:to-purple-700">Rent Now</a>
                     </div>
