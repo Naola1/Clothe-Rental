@@ -112,3 +112,30 @@ def cloth_detail_view(request, cloth_id):
         'existing_rental': existing_rental
     }
     return render(request, 'shop/detail.html', context)
+
+@login_required
+def rented_items(request):
+    rentals = Rental.objects.filter(user=request.user)
+    return render(request, 'shop/rented_items.html', {'rentals': rentals})
+
+
+@csrf_protect
+@login_required
+def extend_rental(request, rental_id):
+    rental = get_object_or_404(Rental, pk=rental_id, user=request.user)
+    cloth = rental.clothe
+
+    days_to_extend = int(request.POST.get('days', 0))
+    original_return_date = rental.return_date
+    new_return_date = original_return_date + timedelta(days=days_to_extend)
+    extension_price = days_to_extend * cloth.price
+
+    return redirect(
+        'initiate_payment', 
+        cloth_id=cloth.id, 
+        duration=days_to_extend, 
+        rental_date=original_return_date, 
+        return_date=new_return_date, 
+        total_price=extension_price, 
+        original_rental_id=rental_id
+    )
