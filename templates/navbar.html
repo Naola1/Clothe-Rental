@@ -3,7 +3,7 @@
         <div class="container mx-auto flex justify-between items-center py-4 px-6">
             <!-- Logo -->
             <div class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 transition duration-300">
-                <a href="{% url 'home' %}" class="cursor-pointer">Lily's Closet</a>
+                <a href="{% url 'home' %}" class="cursor-pointer">Home</a>
             </div>
 
             <!-- Navigation Links -->
@@ -39,7 +39,7 @@
                 {% if user.is_authenticated %}
                     <!-- Cart Icon -->
                     <div class="relative group">
-                        <a href="#" class="flex items-center space-x-2 text-white hover:text-blue-400 transition duration-300">
+                        <a href="{% url 'cart' %}" class="flex items-center space-x-2 text-white hover:text-blue-400 transition duration-300">
                             <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h18l-1.5 9H5.25L3 3zm0 0h18M6 21a3 3 0 100-6 3 3 0 000 6zm12 0a3 3 0 100-6 3 3 0 000 6z" />
                             </svg>
@@ -70,7 +70,7 @@
                             </span>
                         </a>
 
-                        <!--  Dropdown Menu -->
+                        <!--Dropdown Menu -->
                         <div class="absolute right-0 z-10 mt-2 w-56 rounded-lg shadow-xl bg-black ring-1 
                         ring-gray-800 transition-transform duration-300 ease-in-out transform scale-95 
                         opacity-0 group-hover:scale-100 group-hover:opacity-100" >
@@ -84,7 +84,7 @@
                                           hover:text-white rounded transition duration-300">
                                     Edit Profile
                                 </a>
-                                <a href="#" 
+                                <a href="{% url 'rented_list' %}" 
                                    class="block px-4 py-2 text-gray-200 hover:bg-blue-600 
                                           hover:text-white rounded transition duration-300">
                                     Rented Items
