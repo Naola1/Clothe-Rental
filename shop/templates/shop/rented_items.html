@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rental Items</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+{% extends 'main.html' %}
+{% block content %}
+<div class="container mx-auto py-10">
+    <h2 class="text-3xl font-bold text-center mb-8 mt-12">Rented Items</h2>
+    
+    {% if rentals %}
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-7">
+        {% for rental in rentals %}
+        <div class="rental-item bg-white rounded-lg shadow-lg overflow-hidden transition-transform duration-300 hover:shadow-2xl transform hover:scale-105" data-id="{{ rental.id }}">
+            <img src="{{ rental.clothe.image.url }}" alt="{{ rental.clothe.name }}" class="rounded-md h-64 object-contain mx-auto transition-transform duration-300 hover:scale-105">
+            <div class="p-4">
+                <h3 class="text-xl font-semibold">{{ rental.clothe.name }}</h3>
+                <p class="text-gray-600 mb-2">Rental Date: {{ rental.rental_date|date:"M d, Y" }}</p>
+                <p class="text-gray-600 mb-2 return-date">Return Date: {{ rental.return_date|date:"M d, Y" }}</p>
+                <button 
+                class="bg-gradient-to-r from-green-500 to-teal-600 text-white px-4 py-2 mt-2 rounded-full transition duration-300 hover:from-green-600 hover:to-teal-700"
+                onclick="showExtendModal({{ rental.id }}, '{{ rental.clothe.name }}', '{{ rental.return_date|date:'Y-m-d' }}', {{ rental.clothe.price }})">
+                Extend Return
+            </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-center col-span-full text-gray-700">You don't have any rented items.</p>
+    {% endif %}
+</div>
+<script>
+    function showExtendModal(rentalId, clothName, currentReturnDate, dailyRate) {
+        // Create modal dynamically
+        const modal = document.createElement('div');
+        modal.innerHTML = `
+            <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-white rounded-lg p-6 max-w-md w-full">
+                    <h2 class="text-2xl font-bold mb-4">Extend Rental: ${clothName}</h2>
+                    <p class="mb-2">Current Return Date: ${currentReturnDate}</p>
+                    <p class="mb-4">Daily Rate: $${dailyRate}</p>
+                    
+                    <div class="mb-4">
+                        <label class="block mb-2">Days to Extend</label>
+                        <input 
+                            type="number" 
+                            id="extensionDays" 
+                            min="1" 
+                            value="1" 
+                            class="w-full border rounded p-2"
+                        >
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p>Total Cost: $<span id="totalExtensionCost">${dailyRate}</span></p>
+                    </div>
+                    
+                    <form 
+                        action="/extend_rental/${rentalId}/" 
+                        method="post"
+                        id="extensionForm"
+                    >
+                        {% csrf_token %}
+                        <input type="hidden" name="days" id="formDays" value="1">
+                        <div class="flex justify-between">
+                            <button 
+                                type="button" 
+                                onclick="closeModal()" 
+                                class="bg-gray-200 text-gray-800 px-4 py-2 rounded"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="submit" 
+                                class="bg-green-500 text-white px-4 py-2 rounded"
+                            >
+                                Confirm Extension
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    
+        // Dynamic cost calculation
+        const extensionDays = document.getElementById('extensionDays');
+        const totalCostSpan = document.getElementById('totalExtensionCost');
+        const formDays = document.getElementById('formDays');
+    
+        extensionDays.addEventListener('input', function() {
+            const days = parseInt(this.value) || 1;
+            const cost = days * dailyRate;
+            totalCostSpan.textContent = cost.toFixed(2);
+            formDays.value = days;
+        });
+    }
+    
+    function closeModal() {
+        const modal = document.querySelector('.fixed.inset-0');
+        if (modal) {
+            modal.remove();
+        }
+    }
+    </script>
+
+{% endblock %}
+</body>
+</html>
