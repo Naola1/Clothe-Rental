@@ -1,0 +1,124 @@
+:root {
+    --primary-color: #c6c3c3;
+    --second-color: #ffffff;
+    --black-color: #000000;
+}
+
+body {
+    background-color: #f7fafc; 
+    color: #1a202c; 
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.box {
+    background-color: #ffffff; 
+    border-radius: 10px; 
+    padding: 40px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); 
+    width: 90%;
+    max-width: 400px;
+}
+
+.wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.header {
+    font-size: 2.5em;
+    text-align: center;
+    margin-bottom: 30px;
+    color: #58a6ff;
+}
+
+.input-box {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.input-field {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #58a6ff; /* Border color */
+    border-radius: 5px;
+    background-color: #e0f7fa; /* Light background color for differentiation */
+    color: #1a202c; /* Text color */
+    transition: border-color 0.3s;
+    height: 50px; 
+    box-sizing: border-box; 
+}
+
+.input-field:focus {
+    border-color: #0056b3; /* Darker border on focus */
+    outline: none;
+    background-color: #ffffff; /* Optional: change background on focus */
+}
+
+.label {
+    position: absolute;
+    top: 50%;
+    left: 20px;
+    transform: translateY(-50%);
+    transition: .25s;
+}
+
+.input-field:focus ~ .label,
+.input-field:valid ~ .label {
+    top: 0;
+    font-size: 14px;
+    background-color: var(--primary-color);
+    border-radius: 20px;
+    color: var(--black-color);
+    padding: 0 10px;
+    border-color: var(--second-color);
+    box-shadow: 0 0 8px var(--second-color);
+}
+
+.error-message {
+    color: red;
+    font-size: 0.9em;
+    margin-top: 5px;
+}
+
+.success {
+    color: green;
+    margin-top: 10px;
+    text-align: center;
+}
+
+.input-submit {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 5px;
+    background-color: #58a6ff;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    height: 50px; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.input-submit:hover {
+    background: var(--second-color);
+    color: var(--primary-color);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.link {
+    display: block;
+    text-align: center;
+    margin-top: 15px;
+    color: #58a6ff;
+    text-decoration: underline;
+}
