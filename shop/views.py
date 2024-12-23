@@ -207,3 +207,51 @@ def cart_view(request):
         'return_date': return_date,
     }
     return render(request, 'shop/cart.html', context)
+
+
+@login_required
+def update_cart_item(request):
+    """
+    Updates the quantity of a specific cart item.
+    """
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        item_id = data.get('item_id')
+        quantity = data.get('quantity')
+
+        try:
+            cart_item = CartItem.objects.get(id=item_id, cart__user=request.user)
+            cart_item.quantity = quantity
+            cart_item.save()
+            return JsonResponse({'status': 'success'})
+        except CartItem.DoesNotExist:
+            return JsonResponse({'status': 'error'}, status=404)
+
+    return JsonResponse({'status': 'error'}, status=400)
+
+
+@login_required
+def remove_from_cart(request, cloth_id):
+    """
+    Removes an item from the user's cart.
+    If the cart becomes empty, deletes the cart as well.
+    """
+    try:
+        cart = get_object_or_404(Cart, user=request.user)
+        cart_item = get_object_or_404(CartItem, cart=cart, clothes_id=cloth_id)
+        item_name = cart_item.clothes.name
+        cart_item.delete()
+
+        # Check if cart is now empty
+        if not cart.items.exists():
+            cart.delete()
+            messages.info(request, "Your cart is now empty.")
+        else:
+            messages.success(request, f"{item_name} has been removed from your cart.")
+    except Cart.DoesNotExist:
+        messages.warning(request, "Your cart is empty.")
+    except CartItem.DoesNotExist:
+        messages.warning(request, "This item was not found in your cart.")
+    except Exception as e:
+        messages.error(request, "An error occurred while removing the item.")
+    return redirect('cart')
