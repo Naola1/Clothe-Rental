@@ -36,7 +36,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone_number = models.CharField(max_length=15, blank=True, 
                                     validators=[RegexValidator(regex=r'^\d{10,15}$', message="Phone number must be between 10 and 15 digits.")])
     address = models.TextField(blank=True)
-    profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True1)
+    profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
     email_verified = models.BooleanField(default=False)
     verification_token = models.CharField(max_length=50, blank=True, null=True)
     rented_items = models.ForeignKey('shop.Rental', on_delete=models.CASCADE, null=True, blank=True, related_name='rented_by_user'  )
