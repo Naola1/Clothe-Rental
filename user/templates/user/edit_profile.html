@@ -87,7 +87,6 @@
 {% block extra_js %}
 <script src="{% static 'js/edit-profile.js' %}"></script>
 <script>
-    // Optional: Preview image functionality (if needed)
     document.getElementById('profile_picture').addEventListener('change', function(event) {
         const file = event.target.files[0];
         if (file) {
