@@ -1,0 +1,14 @@
+{% extends 'main.html' %}
+
+{% block content %}
+<div class="container mx-auto py-10 flex flex-col items-center justify-center min-h-screen bg-gray-100">
+    <div class="max-w-md mx-auto bg-white shadow-lg rounded-lg p-6 text-center">
+        <h2 class="text-2xl font-bold mb-4 text-green-600">Rental Extended Successfully</h2>
+        <p class="text-lg mb-4">Your rental for <strong>{{ rental.clothe.name }}</strong> has been extended by <strong>{{ days_extended }}</strong> days.</p>
+        <p class="text-lg mb-4">New Return Date: <strong>{{ rental.return_date|date:"M d, Y" }}</strong></p>
+        <a href="{% url 'rented_items' %}" class="mt-4 inline-block bg-green-500 text-white px-4 py-2 rounded transition duration-300 hover:bg-green-600">
+            Back to Rented Items
+        </a>
+    </div>
+</div>
+{% endblock %}
