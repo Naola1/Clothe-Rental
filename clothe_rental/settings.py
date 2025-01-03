@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'shop',
     'user',
     'payment',
+    'notifications',
 
     #libraries
     'tailwind',
