@@ -1,4 +1,3 @@
-# views.py
 import stripe
 from django.conf import settings
 from django.shortcuts import redirect, render, get_object_or_404
@@ -17,7 +16,6 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 @login_required
 def initiate_payment(request):
     try:
-        # Extract rental details from POST data
         cloth_id = request.POST.get('cloth_id')
         duration = request.POST.get('duration')
         rental_date = request.POST.get('rental_date')
@@ -25,10 +23,8 @@ def initiate_payment(request):
         total_price = request.POST.get('total_price')
         notes = request.POST.get('notes', '')
 
-        # Retrieve the Clothes instance
         cloth = Clothes.objects.get(id=cloth_id)
 
-        # Create Stripe Checkout Session
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[{
@@ -47,10 +43,9 @@ def initiate_payment(request):
             client_reference_id=str(request.user.id)
         )
 
-        # Create a pending payment record
         Payment.objects.create(
             user=request.user,
-            cloth=cloth,  # Use the Clothes instance
+            cloth=cloth,  
             stripe_payment_intent=checkout_session.id,
             amount=total_price,
             status='pending'
@@ -111,11 +106,11 @@ def extend_rental(request, rental_id):
 @login_required
 def cart_payment(request):
     """
-    Handle cart payment with full billing details
+    Handle cart payment with only email input
     """
     try:
         cart_items = request.POST.getlist('cart_items')
-        cart_durations = request.POST.getlist('durations')  # Add duration for each item
+        cart_durations = request.POST.getlist('durations')
         cart_total = request.POST.get('cart_total')
 
         if not cart_items:
@@ -123,60 +118,84 @@ def cart_payment(request):
             return redirect('cart')
 
         line_items = []
-        rental_details = []  # Store details for success handler
+        rental_details = []
 
-        for item_id, duration in zip(cart_items, cart_durations):
-            cloth = get_object_or_404(Clothes, id=item_id)
-            rental_start = request.POST.get(f'rental_date_{item_id}')
-            rental_end = request.POST.get(f'return_date_{item_id}')
-            item_price = float(request.POST.get(f'price_{item_id}', cloth.price))
+        try:
+            for item_id, duration in zip(cart_items, cart_durations):
+                cloth = get_object_or_404(Clothes, id=item_id)
+                rental_start = request.POST.get(f'rental_date_{item_id}')
+                rental_end = request.POST.get(f'return_date_{item_id}')
+                item_price = float(request.POST.get(f'price_{item_id}', cloth.price))
 
-            line_items.append({
-                'price_data': {
-                    'currency': 'usd',
-                    'unit_amount': int(item_price * 100),
-                    'product_data': {
-                        'name': f'Rental: {cloth.name}',
-                        'description': f'Duration: {duration} days (from {rental_start} to {rental_end})'
+                line_items.append({
+                    'price_data': {
+                        'currency': 'usd',
+                        'unit_amount': int(item_price * 100),
+                        'product_data': {
+                            'name': f'Rental: {cloth.name}',
+                            'description': f'Duration: {duration} days (from {rental_start} to {rental_end})'
+                        },
                     },
-                },
-                'quantity': 1,
-            })
+                    'quantity': 1,
+                })
 
-            rental_details.append({
-                'cloth_id': item_id,
-                'duration': duration,
-                'rental_date': rental_start,
-                'return_date': rental_end,
-                'price': item_price
-            })
+                rental_details.append({
+                    'cloth_id': item_id,
+                    'duration': duration,
+                    'rental_date': rental_start,
+                    'return_date': rental_end,
+                    'price': item_price
+                })
 
-        # Store rental details in session for success handler
-        request.session['cart_rental_details'] = rental_details
+            # Store rental details in session
+            request.session['cart_rental_details'] = rental_details
 
-        checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=line_items,
-            mode='payment',
-            success_url=request.build_absolute_uri('/payments/cart-success/'),
-            cancel_url=request.build_absolute_uri('/payments/cancel/'),
-            billing_address_collection='required',  details
-            client_reference_id=str(request.user.id)
-        )
+            try:
+                checkout_session = stripe.checkout.Session.create(
+                    payment_method_types=['card'],
+                    line_items=line_items,
+                    mode='payment',
+                    success_url=request.build_absolute_uri('/payments/cart-success/'),
+                    cancel_url=request.build_absolute_uri('/payments/cancel/'),
+                    client_reference_id=str(request.user.id),
+                    customer_email=request.user.email,  # Pre-fill the email
+                    # payment_method_collection='always',  # Only collect payment method
+                    billing_address_collection='auto',  # Don't collect billing address
+                    shipping_address_collection=None,  # Don't collect shipping address
+                )
+                print("Stripe session created successfully:", checkout_session.id)
 
-        Payment.objects.create(
-            user=request.user,
-            stripe_payment_intent=checkout_session.id,
-            amount=cart_total,
-            status='pending',
-            payment_type='cart'
-        )
+                try:
+                    print("Creating Payment object...")
+                    payment = Payment.objects.create(
+                        user=request.user,
+                        cloth=cloth,
+                        stripe_payment_intent=checkout_session.id,
+                        amount=cart_total,
+                        status='pending',
+                        payment_type='cart'
+                    )
+                    print("Payment object created successfully:", payment.id)
 
-        return redirect(checkout_session.url)
+                    return redirect(checkout_session.url)
+
+                except Exception as payment_error:
+                    print("Error creating Payment object:", str(payment_error))
+                    raise Exception(f"Payment creation failed: {str(payment_error)}")
+
+            except stripe.error.StripeError as stripe_error:
+                print("Stripe error:", str(stripe_error))
+                raise Exception(f"Stripe error: {str(stripe_error)}")
+
+        except Clothes.DoesNotExist as cloth_error:
+            print("Clothes not found:", str(cloth_error))
+            raise Exception(f"Item not found: {str(cloth_error)}")
 
     except Exception as e:
-        messages.error(request, f'Cart payment failed: {str(e)}')
+        print("Final error:", str(e))
+        messages.error(request, str(e))
         return redirect('cart')
+    
 
 @login_required
 def cart_payment_success(request):
