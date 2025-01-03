@@ -4,19 +4,18 @@ from django.utils import timezone
 from datetime import timedelta
 from shop.models import Rental
 from .models import RentalNotification
-import datetime
+from .services import EmailService
 
 @receiver(post_save, sender=Rental)
 def create_rental_notifications(sender, instance, created, **kwargs):
-    """Create notifications when a new rental is created"""
     if created:
-       
-        reminder_date = datetime.datetime.strptime(instance.return_date, '%Y-%m-%d')
-        reminder_date = reminder_date - datetime.timedelta(days=1)
-        reminder_date = reminder_date.replace(hour=0, minute=0, second=0)
-        
-        RentalNotification.objects.create(
+        # Create return reminder notification (1 day before return date)
+        reminder_date = instance.return_date - timedelta(days=1)
+        notification = RentalNotification.objects.create(
             rental=instance,
             notification_type='return_reminder',
-            scheduled_date=reminder_date
+            status='pending',
+            scheduled_date=timezone.make_aware(timezone.datetime.combine(reminder_date, timezone.datetime.min.time()))
         )
+
+#

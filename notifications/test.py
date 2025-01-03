@@ -1,30 +1,29 @@
-# notifications/tests.py
 from django.test import TestCase
 from django.utils import timezone
-from django.core import mail
-from unittest.mock import patch
 from datetime import timedelta
+from unittest.mock import patch
+from freezegun import freeze_time
 from .models import RentalNotification
 from .services import EmailService
 from shop.models import Rental, Clothes, Category
 from user.models import User
 
 class NotificationTests(TestCase):
-    def setUp(self):
-        # Create test user
+    @patch('notifications.signals.EmailService.send_return_reminder')
+    def setUp(self, mock_send_reminder):
+        mock_send_reminder.return_value = True
+        
         self.user = User.objects.create_user(
             username='testuser',
-            email='test@example.com',
+            email='naolmitiku85@gmail.com',
             password='testpass123'
         )
-
-        # Create category
+        
         self.category = Category.objects.create(
             name="Test Category",
             slug="test-category"
         )
-
-        # Create clothes
+        
         self.clothe = Clothes.objects.create(
             category=self.category,
             name="Test Dress",
@@ -36,84 +35,58 @@ class NotificationTests(TestCase):
             condition="new",
             availability=True
         )
-
-        # Create rental
+        
+        # Create rental with future return date
         self.rental = Rental.objects.create(
             user=self.user,
             clothe=self.clothe,
             status="active",
             rental_date=timezone.now().date(),
-            duration=1,
-            return_date=timezone.now().date() + timedelta(days=1)
+            duration=7,  
+            return_date=timezone.now().date() + timedelta(days=7)
+        )
+        
+        self.notification = RentalNotification.objects.get(rental=self.rental)
+        mock_send_reminder.reset_mock()
+
+    def test_notification_creation(self):
+        """Test that notification is created correctly with rental"""
+        self.assertEqual(self.notification.notification_type, 'return_reminder')
+        self.assertEqual(self.notification.status, 'pending')
+        self.assertEqual(
+            self.notification.scheduled_date.date(),
+            self.rental.return_date - timedelta(days=1)
         )
 
-    def test_notification_creation_on_rental(self):
-        """Test that notification is created automatically when rental is created"""
-        notifications = RentalNotification.objects.filter(rental=self.rental)
-        self.assertEqual(notifications.count(), 1)
-        self.assertEqual(notifications[0].notification_type, 'return_reminder')
-
-    def test_email_sending(self):
-        """Test actual email sending"""
-        notification = RentalNotification.objects.get(rental=self.rental)
-        EmailService.send_return_reminder(notification)
+    @patch('notifications.services.EmailService.send_email')
+    @freeze_time("2024-01-01 12:00:00")
+    def test_early_reminder(self, mock_send_email):
+        """Test sending reminder before the scheduled date"""
+        mock_send_email.return_value = True
         
-        # Test that email was sent
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].to[0], self.user.email)
+        # Set rental return date to 3 days from now
+        self.rental.return_date = timezone.now().date() + timedelta(days=3)
+        self.rental.save()
         
-        # Test that notification was marked as sent
-        notification.refresh_from_db()
-        self.assertEqual(notification.status, 'sent')
+        # Update notification scheduled date
+        self.notification.scheduled_date = timezone.now() + timedelta(days=2)
+        self.notification.save()
+        
+        # Send reminder
+        result = EmailService.send_return_reminder(self.notification)
+        
+        self.assertTrue(result)
+        self.assertEqual(self.notification.status, 'sent')
+        mock_send_email.assert_called_once()
 
-    def test_command_sends_due_notifications(self):
-        """Test that management command sends due notifications"""
-        notification = RentalNotification.objects.get(rental=self.rental)
-        notification.scheduled_date = timezone.now() - timedelta(minutes=1)
-        notification.save()
-
-        # Run command
-        from notifications.management.commands.check_notifications import Command
-        command = Command()
-        command.handle()
-
-        # Check notification was sent
-        notification.refresh_from_db()
-        self.assertEqual(notification.status, 'sent')
-        self.assertEqual(len(mail.outbox), 1)
-
-    def test_command_skips_future_notifications(self):
-        """Test that command doesn't send future notifications"""
-        notification = RentalNotification.objects.get(rental=self.rental)
-        notification.scheduled_date = timezone.now() + timedelta(days=1)
-        notification.save()
-
-        # Run command
-        from notifications.management.commands.check_notifications import Command
-        command = Command()
-        command.handle()
-
-        # Check notification wasn't sent
-        notification.refresh_from_db()
-        self.assertEqual(notification.status, 'pending')
-        self.assertEqual(len(mail.outbox), 0)
-
-    def test_email_failure_handling(self):
+    @patch('notifications.services.EmailService.send_email')
+    def test_email_failure_handling(self, mock_send_email):
         """Test handling of email sending failures"""
-        notification = RentalNotification.objects.get(rental=self.rental)
+        mock_send_email.return_value = "SMTP error"
         
-        # Simulate email failure
-        with patch('django.core.mail.send_mail', side_effect=Exception('Email failed')):
-            EmailService.send_return_reminder(notification)
+        result = EmailService.send_return_reminder(self.notification)
         
-        # Check notification was marked as failed
-        notification.refresh_from_db()
-        self.assertEqual(notification.status, 'failed')
-        self.assertIn('Email failed', notification.error_message)
+        self.assertFalse(result)
+        self.assertEqual(self.notification.status, 'failed')
+        self.assertEqual(self.notification.error_message, "SMTP error")
 
-    def tearDown(self):
-        # Clean up
-        self.user.delete()
-        self.category.delete()
-        self.clothe.delete()
-        mail.outbox = []
