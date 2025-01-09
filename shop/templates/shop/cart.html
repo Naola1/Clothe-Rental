@@ -4,6 +4,39 @@
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/home.css' %}">
+    <style>
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 50;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            z-index: 51;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal.active,
+        .modal-backdrop.active {
+            display: block;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
@@ -70,25 +103,123 @@
                     </div>
 
                     <div class="mt-6 text-center">
-                        <form action="{% url 'initiate_payment' %}" method="post">
-                            {% csrf_token %}
-                            <input type="hidden" name="total_price" value="{{ cart_total }}">
-                            {% for item in cart.items.all %}
-                                <input type="hidden" name="cloth_id" value="{{ item.clothes.id }}">
-                                <input type="hidden" name="duration" value="{{ item.quantity }}">
-                                <input type="hidden" name="rental_date" value="{{ today_date|date:'Y-m-d' }}">
-                                <input type="hidden" name="return_date" value="{{ return_date|date:'Y-m-d' }}">
-                            {% endfor %}
-                            <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-2 rounded transition duration-300">
-                                Proceed to Checkout
-                            </button>
-                        </form>
+                        <button type="button" 
+                                onclick="openCheckoutModal()"
+                                class="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-2 rounded transition duration-300">
+                            Proceed to Checkout
+                        </button>
                     </div>
                 {% else %}
                     <p class="text-center text-gray-400">Your cart is empty.</p>
                 {% endif %}
             </div>
         </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div id="modalBackdrop" class="modal-backdrop"></div>
+    <div id="checkoutModal" class="modal">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold">Checkout Options</h3>
+            <button onclick="closeModal()" class="text-gray-500 hover:text-gray-700">&times;</button>
+        </div>
+
+        <form id="rentalForm" action="{% url 'cart_payment' %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="cart_total" value="{{ cart_total }}">
+            
+            <div class="mb-6">
+                <label class="block mb-2">Rental Type</label>
+                <div class="flex gap-4">
+                    <label class="flex items-center">
+                        <input type="radio" name="rental_type" value="together" checked 
+                               class="mr-2" onchange="updateRentalType()">
+                        Rent All Items Together
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="rental_type" value="individual" 
+                               class="mr-2" onchange="updateRentalType()">
+                        Rent Items Individually
+                    </label>
+                </div>
+            </div>
+
+            <div id="togetherRental">
+                <div class="mb-4">
+                    <label class="block mb-2">Start Date</label>
+                    <input type="date" name="rental_date" 
+                           min="{{ today_date|date:'Y-m-d' }}"
+                           class="w-full border rounded px-3 py-2"
+                           onchange="calculateReturnDate(this)">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block mb-2">Duration (days)</label>
+                    <input type="number" name="duration" min="1" value="1"
+                           class="w-full border rounded px-3 py-2"
+                           onchange="calculateReturnDate(this)">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block mb-2">Return Date</label>
+                    <input type="date" name="return_date" readonly
+                           class="w-full border rounded px-3 py-2 bg-gray-100">
+                </div>
+            </div>
+
+            <div id="individualRental" class="hidden">
+                <div class="grid grid-cols-2 gap-6">
+                    {% for item in cart.items.all %}
+                    <div class="border rounded p-4">
+                        <h4 class="font-semibold mb-3">{{ item.clothes.name }}</h4>
+                        <input type="hidden" name="cart_items" value="{{ item.clothes.id }}">
+                        <input type="hidden" name="price_{{ item.clothes.id }}" value="{{ item.clothes.price }}">
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block mb-1 text-sm">Start Date</label>
+                                <input type="date" name="rental_date_{{ item.clothes.id }}"
+                                       min="{{ today_date|date:'Y-m-d' }}"
+                                       class="w-full border rounded px-3 py-2 text-sm"
+                                       onchange="calculateIndividualPrice('{{ item.clothes.id }}')">
+                            </div>
+                            <div>
+                                <label class="block mb-1 text-sm">Duration (days)</label>
+                                <input type="number" name="durations" min="1" value="1"
+                                       class="w-full border rounded px-3 py-2 text-sm"
+                                       onchange="calculateIndividualPrice('{{ item.clothes.id }}')">
+                            </div>
+                            <div>
+                                <label class="block mb-1 text-sm">Return Date</label>
+                                <input type="date" name="return_date_{{ item.clothes.id }}" readonly
+                                       class="w-full border rounded px-3 py-2 text-sm bg-gray-100">
+                            </div>
+                            <div>
+                                <label class="block mb-1 text-sm">Item Total</label>
+                                <input type="text" readonly 
+                                       id="total_{{ item.clothes.id }}"
+                                       class="w-full border rounded px-3 py-2 text-sm bg-gray-100"
+                                       value="${{ item.get_total_price }}">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-between items-center border-t pt-4">
+                <div class="text-lg font-semibold">
+                    Total: <span id="modalTotal">${{ cart_total }}</span>
+                </div>
+                <button type="submit" 
+                        class="bg-green-500 hover:bg-green-600 text-white font-semibold px-6 py-2 rounded">
+                    Proceed to Payment
+                </button>
+            </div>
+
+            <textarea name="notes" placeholder="Additional Notes (Optional)"
+                      class="w-full mt-4 border rounded px-3 py-2" rows="3"></textarea>
+        </form>
     </div>
 {% endblock %}
 
@@ -131,7 +262,7 @@
             document.getElementById('total-price').textContent = `$${subtotal.toFixed(2)}`;
             
             // Update hidden total price input for payment
-            document.querySelector('input[name="total_price"]').value = subtotal.toFixed(2);
+            document.querySelector('input[name="cart_total"]').value = subtotal.toFixed(2);
         }
 
         // Helper function to get CSRF token
@@ -149,5 +280,103 @@
             }
             return cookieValue;
         }
+
+        function openCheckoutModal() {
+            document.getElementById('modalBackdrop').classList.add('active');
+            document.getElementById('checkoutModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modalBackdrop').classList.remove('active');
+            document.getElementById('checkoutModal').classList.remove('active');
+        }
+
+        function updateRentalType() {
+            const rentalType = document.querySelector('input[name="rental_type"]:checked').value;
+            const togetherSection = document.getElementById('togetherRental');
+            const individualSection = document.getElementById('individualRental');
+            
+            if (rentalType === 'together') {
+                togetherSection.classList.remove('hidden');
+                individualSection.classList.add('hidden');
+            } else {
+                togetherSection.classList.add('hidden');
+                individualSection.classList.remove('hidden');
+            }
+            updateTotalPrice();
+        }
+
+        function calculateReturnDate(input) {
+            const form = document.getElementById('rentalForm');
+            const startDateInput = form.querySelector('[name="rental_date"]');
+            const durationInput = form.querySelector('[name="duration"]');
+            
+            if (startDateInput.value && durationInput.value) {
+                const startDate = new Date(startDateInput.value);
+                const duration = parseInt(durationInput.value);
+                const returnDate = new Date(startDate);
+                returnDate.setDate(returnDate.getDate() + duration);
+                
+                form.querySelector('[name="return_date"]').value = returnDate.toISOString().split('T')[0];
+                
+                // Update all individual items with the same dates
+                document.querySelectorAll('#individualRental input[type="hidden"][name="cart_items"]').forEach(input => {
+                    const itemId = input.value;
+                    document.querySelector(`[name="rental_date_${itemId}"]`).value = startDateInput.value;
+                    document.querySelector(`[name="return_date_${itemId}"]`).value = returnDate.toISOString().split('T')[0];
+                    document.querySelector(`[name="durations"]`).value = duration;
+                });
+                
+                updateTotalPrice();
+            }
+        }
+
+        function calculateIndividualPrice(itemId) {
+            const startDateInput = document.querySelector(`[name="rental_date_${itemId}"]`);
+            const durationInput = document.querySelector(`[name="durations"]`);
+            const returnDateInput = document.querySelector(`[name="return_date_${itemId}"]`);
+            
+            if (startDateInput.value && durationInput.value) {
+                const startDate = new Date(startDateInput.value);
+                const duration = parseInt(durationInput.value);
+                const returnDate = new Date(startDate);
+                returnDate.setDate(returnDate.getDate() + duration);
+                
+                returnDateInput.value = returnDate.toISOString().split('T')[0];
+                
+                const pricePerDay = parseFloat(document.querySelector(`[name="price_${itemId}"]`).value);
+                const totalPrice = (pricePerDay * duration).toFixed(2);
+                document.getElementById(`total_${itemId}`).value = `$${totalPrice}`;
+                
+                updateTotalPrice();
+            }
+        }
+
+        function updateTotalPrice() {
+            const rentalType = document.querySelector('input[name="rental_type"]:checked').value;
+            let total = 0;
+
+            if (rentalType === 'together') {
+                const duration = parseInt(document.querySelector('[name="duration"]').value) || 1;
+                document.querySelectorAll('input[name="cart_items"]').forEach(input => {
+                    const itemId = input.value;
+                    const pricePerDay = parseFloat(document.querySelector(`[name="price_${itemId}"]`).value);
+                    total += pricePerDay * duration;
+                });
+            } else {
+                document.querySelectorAll('input[name="durations"]').forEach((input, index) => {
+                    const itemId = document.querySelectorAll('input[name="cart_items"]')[index].value;
+                    const duration = parseInt(input.value) || 1;
+                    const pricePerDay = parseFloat(document.querySelector(`[name="price_${itemId}"]`).value);
+                    total += pricePerDay * duration;
+                });
+            }
+
+            document.getElementById('modalTotal').textContent = `$${total.toFixed(2)}`;
+            document.querySelector('input[name="cart_total"]').value = total.toFixed(2);
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('modalBackdrop').addEventListener('click', closeModal);
     </script>
 {% endblock %}

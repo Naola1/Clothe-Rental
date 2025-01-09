@@ -48,10 +48,15 @@
     </div>
 
     {% if rentals %}
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-7">
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-7 ml-18">
         {% for rental in rentals %}
         <div class="rental-item bg-white rounded-lg shadow-lg overflow-hidden transition-transform duration-300 hover:shadow-2xl transform hover:scale-105" data-id="{{ rental.id }}">
-            <img src="{{ rental.clothe.image.url }}" alt="{{ rental.clothe.name }}" class="rounded-md h-64 object-contain mx-auto transition-transform duration-300 hover:scale-105">
+
+            <img 
+            src="{{ rental.clothe.image.url }}" 
+            alt="{{ rental.cloth.name }}" 
+            class="w-full h-68 object-cover rounded-md shadow-md hover:shadow-xl transition-shadow duration-300"
+        >
             <div class="p-4">
                 <h3 class="text-xl font-semibold">{{ rental.clothe.name }}</h3>
                 <p class="text-gray-600 mb-2">Rental Date: {{ rental.rental_date|date:"M d, Y" }}</p>

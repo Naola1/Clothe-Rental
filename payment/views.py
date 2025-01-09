@@ -10,6 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import Payment
 from shop.models import Clothes, Rental
 from decimal import Decimal
+from datetime import datetime
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
@@ -243,18 +244,23 @@ def cart_payment_success(request):
 def payment_success(request):
     cloth_id = request.GET.get('cloth_id')
     duration = request.GET.get('duration')
-    rental_date = request.GET.get('rental_date')
-    return_date = request.GET.get('return_date')
+    rental_date_str = request.GET.get('rental_date')  # Get as string
+    return_date_str = request.GET.get('return_date')  # Get as string
     total_price = request.GET.get('total_price')
 
+    # Convert strings to datetime.date objects
+    rental_date = datetime.strptime(rental_date_str, '%Y-%m-%d').date()
+    return_date = datetime.strptime(return_date_str, '%Y-%m-%d').date()
+
     clothe = Clothes.objects.get(id=cloth_id)
+    
     # Create rental record
     rental = Rental.objects.create(
         user=request.user,
         clothe=clothe,
         duration=duration,
-        rental_date=rental_date,
-        return_date=return_date,
+        rental_date=rental_date,  # Use datetime.date object
+        return_date=return_date,  # Use datetime.date object
         total_price=total_price,
         status='active'
     )
@@ -267,7 +273,6 @@ def payment_success(request):
     ).update(status='completed')
 
     return render(request, 'payments/success.html', {'rental': rental})
-
 def payment_cancel(request):
     return render(request, 'payments/cancel.html')
 

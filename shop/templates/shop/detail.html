@@ -1,131 +1,117 @@
 {% extends 'main.html' %}
+{% load static tailwind_tags %}
 {% load static %}
-{% load math_filters %}  
 
 {% block content %}
-{% if existing_rental %}
-    <div class="message-container">
-        <div class="message warning bg-red-500 text-white p-4 mt-20 ml-24 mr-50 rounded-md my-1">
-            You have already rented this item.
-        </div>
-    </div>
-{% endif %}
-<div class="container mx-auto py-8 px-4 mt-16">
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 ">
-        <!-- Image Section -->
-        <div class="bg-white rounded-lg shadow-2xl overflow-hidden transition-transform duration-300 hover:shadow-2xl hover:scale-105">
-            <img src="{{ cloth.image.url }}" alt="{{ cloth.name }}" class="w-full h-full object-cover">
-        </div>
-
-        <!-- Details Section -->
-        <div class="bg-gray-800 text-white rounded-lg shadow-2xl p-6 ">
-            <h2 class="text-3xl font-bold mb-2">{{ cloth.name }}</h2>
-            <p class="text-gray-300 mb-4">{{ cloth.description }}</p>
-            <p class="text-2xl font-semibold text-blue-400 mb-6" data-price="{{ price|stringformat:'f' }}">Price per day: ${{ price }}</p>
-
-            <form id="rentalForm" method="POST" action="{% url 'initiate_payment' %}" class="space-y-4">
-                {% csrf_token %}
-                <input type="hidden" name="cloth_id" value="{{ cloth.id }}">
-                <div class="form-group">
-                    <label class="block text-gray-300 text-sm font-bold mb-2">Rental Duration</label>
-                    <input id="duration" typ="number" name="duration" class="rental-select bg-gray-700 text-white rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+    {% if show_main_image %}
+    <div class="container-fluid p-0 h-screen flex items-center justify-center">
+        <div class="relative h-full w-full">
+            <div class="main-image h-full w-full relative rounded-lg shadow-2xl overflow-hidden">
+                <img src="{{ cloth.image.url }}" alt="Main Image" class="w-full h-full object-cover" id="main-image">
+                
+                <!-- Next and Previous Buttons -->
+                <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-4">
+                    <button class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-2 px-4 rounded-full shadow-md transition duration-300 transform hover:scale-105 prev-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <button class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-2 px-4 rounded-full shadow-md transition duration-300 transform hover:scale-105 next-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
                 </div>
 
-                <div class="form-group">
-                    <label class="block text-gray-300 text-sm font-bold mb-2">Start Date</label>
-                    <input type="date" id="rental_date" name="rental_date" class="date-input bg-gray-700 text-white rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                <!-- Thumbnail Images -->
+                <div class="thumbnail-images absolute top-1/2 right-4 transform -translate-y-1/2 flex space-x-2">
+                    {% for cloth in latest_clothes %}
+                        <img src="{{ cloth.image.url }}"
+                              alt="Thumbnail {{ forloop.counter }}"
+                              class="w-32 h-32 cursor-pointer border-2 border-gray-200 rounded-lg shadow-sm hover:shadow-lg transition-transform duration-300"
+                              data-index="{{ forloop.counter0 }}"
+                              data-src="{{ cloth.image.url }}">
+                    {% endfor %}
                 </div>
 
-                <div class="form-group">
-                    <label class="block text-gray-300 text-sm font-bold mb-2">Return Date</label>
-                    <input type="date" id="return_date" name="return_date" class="date-input bg-gray-700 text-white rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" readonly>
+                <!-- New Products Overlay -->
+                <div class="absolute left-4 top-1/3 transform -translate-y-1/2 bg-gray-800 bg-opacity-80 p-4 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold text-white mb-2">New Arrivals</h2>
+                    <p class="text-sm text-gray-300">Discover our latest clothes that combine style and comfort.</p>
                 </div>
-
-                <div class="form-group">
-                    <label class="block text-gray-300 text-sm font-bold mb-2">Additional Notes</label>
-                    <textarea id="notes" name="notes" class="notes-textarea bg-gray-700 text-white rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="4"></textarea>
-                </div>
-
-                <div class="price-summary">
-                    <div class="price-row total">
-                        <span>Total Price:</span>
-                        <span id="totalPrice">$0.00</span>
-                        <input type="hidden" name="total_price" id="hiddenTotalPrice" value="0">
-                    </div>
-                </div>
-
-                {% if user.is_authenticated %}
-                <button type="submit" id="rentNowBtn" class="rent-button relative px-6 py-3 text-lg font-semibold text-white bg-gradient-to-r from-purple-600 to-blue-500 rounded-full transition-transform transform hover:scale-105 hover:shadow-lg hover-effect">
-                    Rent Now
-                </button>
-                {% else %}
-                    <a href="{% url 'login' %}" class="rent-button block text-center">
-                        Login to Rent
-                    </a>
-                {% endif %}
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- related clothes -->
-<div class="container mx-auto py-10">
-        <h2 class="text-3xl font-bold text-center mb-6 mt-2">Related Clothes</h2>
-    <div id="clothes-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-7">
-        {% for cloth in related_clothes %}
-            <div class="cloth-item bg-white rounded-lg shadow-lg overflow-hidden transition-transform duration-300 hover:shadow-2xl transform hover:scale-105">
-                <img 
-                src="{{ cloth.image.url }}" 
-                alt="{{ cloth.name }}" 
-                class="w-full h-68 object-cover rounded-md shadow-md hover:shadow-xl transition-shadow duration-300"
-            >
-            <!-- Text Section -->
-            <div class="p-4 flex flex-col">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-xl font-semibold">{{ cloth.name }}</h3>
-                    <form action="{% url 'add_to_cart' cloth.id %}" method="post">
-                        {% csrf_token %}
-                        <button type="submit" class="bg-green-500 rounded-full hover:bg-blue-600 text-white font-semibold text-sm py-1 px-2 rounded transition duration-300">
-                            Add to cart
-                        </button>
-                    </form>
-                </div>
-                <p class="text-gray-600">${{ cloth.price }} per day</p>
-                <a href="{% url 'cloth_detail' cloth.id %}" class="block bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 mt-2 rounded-full transition duration-300 hover:from-blue-600 hover:to-purple-700">Rent Now</a>
             </div>
         </div>
-        {% empty %}
-            <p class="text-center col-span-full text-gray-700">
-                {% if search_query %}
-                    No items found matching "{{ search_query }}".
-                {% else %}
-                    No clothes available.
-                {% endif %}
-            </p>
-        {% endfor %}
     </div>
+    {% endif %}
 
-    <!-- Pagination Section -->
-    <div class="flex justify-center mt-8 space-x-4">
-        {% if page_obj.has_previous %}
-            <a href="?page=1" class="bg-blue-500 text-white px-4 py-2 rounded-full transition duration-300 hover:bg-blue-600">First</a>
-            <a href="?page={{ page_obj.previous_page_number }}" class="bg-blue-500 text-white px-4 py-2 rounded-full transition duration-300 hover:bg-blue-600">Previous</a>
+    <!-- Available Clothes Section -->
+    <div class="container mx-auto py-10">
+        {% if search_query %}
+            <div class="bg-gray-100 rounded-lg p-4 mb-6 text-center">
+                <h2 class="text-2xl mt-12 font-bold text-gray-800">
+                    Search Results for "{{ search_query }}"
+                </h2>
+                <p class="text-gray-600 mt-2">
+                    {{ clothes.paginator.count }} item{% if clothes.paginator.count != 1 %}s{% endif %} found
+                </p>
+            </div>
+        {% else %}
+            <h2 class="text-3xl font-bold text-center mb-6 mt-8">Available Clothes</h2>
         {% endif %}
         
-        <span class="flex items-center px-4 text-gray-700">
-            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-        </span>
-        
-        {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}" class="bg-blue-500 text-white px-4 py-2 rounded-full transition duration-300 hover:bg-blue-600">Next</a>
-            <a href="?page={{ page_obj.paginator.num_pages }}" class="bg-blue-500 text-white px-4 py-2 rounded-full transition duration-300 hover:bg-blue-600">Last</a>
-        {% endif %}
+        <div id="clothes-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-7">
+            {% for cloth in clothes %}
+                <div class="cloth-item bg-white rounded-lg shadow-lg overflow-hidden transition-transform duration-300 hover:shadow-2xl transform hover:scale-105">
+                    <!-- Image Section -->
+                    <img 
+                        src="{{ cloth.image.url }}" 
+                        alt="{{ cloth.name }}" 
+                        class="w-full h-68 object-cover rounded-md shadow-md hover:shadow-xl transition-shadow duration-300"
+                    >
+                    <!-- Text Section -->
+                    <div class="p-4 flex flex-col">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xl font-semibold">{{ cloth.name }}</h3>
+                            <form action="{% url 'add_to_cart' cloth.id %}" method="post">
+                                {% csrf_token %}
+                                <button type="submit" class="bg-green-500 rounded-full hover:bg-blue-600 text-white font-semibold text-sm py-1 px-2 rounded transition duration-300">
+                                    Add to cart
+                                </button>
+                            </form>
+                        </div>
+                        <p class="text-gray-600">${{ cloth.price }} per day</p>
+                        <a href="{% url 'cloth_detail' cloth.id %}" class="block bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 mt-2 rounded-full transition duration-300 hover:from-blue-600 hover:to-purple-700">Rent Now</a>
+                    </div>
+                </div>
+            {% empty %}
+                <p class="text-center col-span-full text-gray-700">
+                    {% if search_query %}
+                        No items found matching "{{ search_query }}".
+                    {% else %}
+                        No clothes available.
+                    {% endif %}
+                </p>
+            {% endfor %}
+        </div>
     </div>
-</div>
-
-
+        <!-- Pagination Section -->
+        <div class="flex justify-center mt-8 space-x-4">
+            {% if page_obj.has_previous %}
+                <a href="?page=1" class="bg-blue-500 text-white px-4 py-2 rounded-full transition duration-300 hover:bg-blue-600">First</a>
+                <a href="?page={{ page_obj.previous_page_number }}" class="bg-blue-500 text-white px-4 py-2 rounded-full transition duration-300 hover:bg-blue-600">Previous</a>
+            {% endif %}
+            
+            <span class="flex items-center px-4 text-gray-700">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+            
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="bg-blue-500 text-white px-4 py-2 rounded-full transition duration-300 hover:bg-blue-600">Next</a>
+                <a href="?page={{ page_obj.paginator.num_pages }}" class="bg-blue-500 text-white px-4 py-2 rounded-full transition duration-300 hover:bg-blue-600">Last</a>
+            {% endif %}
+        </div>
+    </div>
 {% endblock %}
-
 {% block extra_js %}
-    <script src="{% static 'js/detail.js' %}"></script>
+    <script src="{% static 'js/home.js' %}"></script>
 {% endblock %}

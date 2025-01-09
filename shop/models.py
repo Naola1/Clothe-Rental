@@ -35,7 +35,7 @@ class Clothes(models.Model):
     #price = models.IntegerField(default = 0)
     image = models.ImageField(upload_to="clothes/")
     availability = models.BooleanField(default=True)
-    rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])  # Rating from 1 to 5
+    rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)],blank=True, null=True)  # Rating from 1 to 5
     stock = models.PositiveIntegerField()
     condition = models.CharField(max_length=50, default="new")
     views_count = models.IntegerField(default=0)

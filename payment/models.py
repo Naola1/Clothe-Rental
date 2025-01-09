@@ -20,5 +20,5 @@ class Payment(models.Model):
         default='initial_rental'
     )
 
-    def __str__(self):
-        return f"Payment for {self.cloth.name} by {self.user.username}"
+    # def __str__(self):
+    #     return f"Payment for {self.cloth.name} by {self.user.username}"

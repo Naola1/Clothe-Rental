@@ -196,8 +196,15 @@ def cart_view(request):
     """
     cart = get_object_or_404(Cart, user=request.user)
     today_date = timezone.now().date()
-    cart_total = sum(item.get_total_price() for item in cart.items.all())
-    max_duration = max(item.quantity for item in cart.items.all())
+    
+    cart_items = cart.items.all()
+    cart_total = sum(item.get_total_price() for item in cart_items)
+
+    if cart_items:
+        max_duration = max(item.quantity for item in cart_items)
+    else:
+        max_duration = 0  # or handle it as needed
+
     return_date = today_date + timedelta(days=max_duration)
 
     context = {
