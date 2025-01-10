@@ -1,74 +1,103 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const mainImage = document.getElementById('main-image');
-    const thumbnailImages = document.querySelectorAll('.thumbnail-images img');
+    const imageGrid = document.getElementById('image-grid');
+    const imageContainers = imageGrid ? imageGrid.querySelectorAll('div[class*="relative overflow-hidden"]') : [];
     const prevBtn = document.querySelector('.prev-btn');
     const nextBtn = document.querySelector('.next-btn');
 
-    if (mainImage && thumbnailImages.length > 0 && prevBtn && nextBtn) {
+    if (imageContainers.length > 0 && prevBtn && nextBtn) {
         let currentIndex = 0;
-        let visibleRangeStart = 0;
         let autoplayInterval;
+        let isAnimating = false;
 
-        // Update main image
-        function updateMainImage(index) {
-            mainImage.src = thumbnailImages[index].src;
+        // Update images with animation
+        function updateImages(index, direction = 'next') {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            // Add transition class to all containers
+            imageContainers.forEach((container) => {
+                container.style.transition = 'transform 0.8s ease-in-out';
+                container.style.transform = direction === 'next' ? 'translateX(-100%)' : 'translateX(100%)';
+            });
+
+            setTimeout(() => {
+                imageContainers.forEach((container, i) => {
+                    const imageIndex = (index + i) % carouselImages.length;
+                    const imgElement = container.querySelector('img');
+                    const titleElement = container.querySelector('h3');
+                    const descElement = container.querySelector('p');
+
+                    // Update content
+                    imgElement.src = carouselImages[imageIndex].url;
+                    titleElement.textContent = carouselImages[imageIndex].name;
+                    descElement.textContent = carouselImages[imageIndex].description;
+
+                    // Reset position instantly
+                    container.style.transition = 'none';
+                    container.style.transform = direction === 'next' ? 'translateX(100%)' : 'translateX(-100%)';
+                });
+
+                // Force reflow
+                imageGrid.offsetHeight;
+
+                // Animate to final position
+                imageContainers.forEach((container) => {
+                    container.style.transition = 'transform 0.5s ease-in-out';
+                    container.style.transform = 'translateX(0)';
+                });
+
+                setTimeout(() => {
+                    isAnimating = false;
+                }, 500);
+            }, 500);
         }
 
-        // Update the visibility of the thumbnail images
-        function updateThumbnailVisibility() {
-            thumbnailImages.forEach((thumbnail, index) => {
-                thumbnail.style.display = (index >= visibleRangeStart && index < visibleRangeStart + 2) ? 'block' : 'none';
-            });
-        }
-
-        // Update image when thumbnail is clicked
-        thumbnailImages.forEach((thumbnail, index) => {
-            thumbnail.addEventListener('click', () => {
-                currentIndex = index;
-                updateMainImage(currentIndex);
-                visibleRangeStart = Math.floor(currentIndex / 3) * 3;
-                updateThumbnailVisibility();
-                resetAutoplay();
-            });
-        });
-
-        // Move to the previous image
-        prevBtn.addEventListener('click', () => {
-            currentIndex = (currentIndex - 1 + thumbnailImages.length) % thumbnailImages.length;
-            updateMainImage(currentIndex);
-            visibleRangeStart = Math.floor(currentIndex / 3) * 3;
-            updateThumbnailVisibility();
-            resetAutoplay();
-        });
-
-        // Move to the next image
-        nextBtn.addEventListener('click', () => {
-            currentIndex = (currentIndex + 1) % thumbnailImages.length;
-            updateMainImage(currentIndex);
-            visibleRangeStart = Math.floor(currentIndex / 3) * 3;
-            updateThumbnailVisibility();
-            resetAutoplay();
-        });
-
-        // Autoplay function: changes the image every 5 seconds
+        // Autoplay function with smoother transitions
         function startAutoplay() {
             autoplayInterval = setInterval(() => {
-                currentIndex = (currentIndex + 1) % thumbnailImages.length;
-                updateMainImage(currentIndex);
-                visibleRangeStart = Math.floor(currentIndex / 3) * 3;
-                updateThumbnailVisibility();
-            }, 5000); // Change image every 5 seconds
+                if (!isAnimating) {
+                    currentIndex = (currentIndex + 1) % carouselImages.length;
+                    updateImages(currentIndex, 'next');
+                }
+            }, 5000);
         }
 
-        // Stops autoplay and restarts it
         function resetAutoplay() {
             clearInterval(autoplayInterval);
             startAutoplay();
         }
 
-        // Initialize the first image and start autoplay
-        updateMainImage(currentIndex);
-        updateThumbnailVisibility();
+        // Event listeners with direction
+        prevBtn.addEventListener('click', () => {
+            if (!isAnimating) {
+                currentIndex = (currentIndex - 1 + carouselImages.length) % carouselImages.length;
+                updateImages(currentIndex, 'prev');
+                resetAutoplay();
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (!isAnimating) {
+                currentIndex = (currentIndex + 1) % carouselImages.length;
+                updateImages(currentIndex, 'next');
+                resetAutoplay();
+            }
+        });
+
+        // Add hover effect for smoother zoom
+        imageContainers.forEach(container => {
+            container.addEventListener('mouseenter', () => {
+                const img = container.querySelector('img');
+                img.style.transform = 'scale(1.1)';
+            });
+
+            container.addEventListener('mouseleave', () => {
+                const img = container.querySelector('img');
+                img.style.transform = 'scale(1)';
+            });
+        });
+
+        // Initialize autoplay
         startAutoplay();
     }
 });
