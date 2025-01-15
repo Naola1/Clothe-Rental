@@ -8,7 +8,7 @@ from django.contrib import messages
 from datetime import timedelta
 from django.views.decorators.csrf import csrf_exempt
 from .models import Payment
-from shop.models import Clothes, Rental
+from shop.models import Clothes, Rental, Category, CartItem, Cart
 from decimal import Decimal
 from datetime import datetime
 
@@ -31,7 +31,7 @@ def initiate_payment(request):
             line_items=[{
                 'price_data': {
                     'currency': 'usd',
-                    'unit_amount': int(float(total_price) * 100),  # Convert to cents
+                    'unit_amount': int(float(total_price) * 100),  
                     'product_data': {
                         'name': f'Rental for {duration} days',
                     },
@@ -62,9 +62,6 @@ def initiate_payment(request):
 
 @login_required
 def extend_rental(request, rental_id):
-    """
-    Handle rental extension payment
-    """
     try:
         rental = get_object_or_404(Rental, id=rental_id, user=request.user)
         days_to_extend = int(request.POST.get('days', 0))
@@ -106,12 +103,8 @@ def extend_rental(request, rental_id):
 
 @login_required
 def cart_payment(request):
-    """
-    Handle cart payment with only email input
-    """
     try:
         cart_items = request.POST.getlist('cart_items')
-        cart_durations = request.POST.getlist('durations')
         cart_total = request.POST.get('cart_total')
 
         if not cart_items:
@@ -122,10 +115,11 @@ def cart_payment(request):
         rental_details = []
 
         try:
-            for item_id, duration in zip(cart_items, cart_durations):
+            for item_id in cart_items:
                 cloth = get_object_or_404(Clothes, id=item_id)
                 rental_start = request.POST.get(f'rental_date_{item_id}')
                 rental_end = request.POST.get(f'return_date_{item_id}')
+                duration = request.POST.get(f'durations_{item_id}')
                 item_price = float(request.POST.get(f'price_{item_id}', cloth.price))
 
                 line_items.append({
@@ -148,7 +142,6 @@ def cart_payment(request):
                     'price': item_price
                 })
 
-            # Store rental details in session
             request.session['cart_rental_details'] = rental_details
 
             try:
@@ -159,79 +152,96 @@ def cart_payment(request):
                     success_url=request.build_absolute_uri('/payments/cart-success/'),
                     cancel_url=request.build_absolute_uri('/payments/cancel/'),
                     client_reference_id=str(request.user.id),
-                    customer_email=request.user.email,  # Pre-fill the email
-                    # payment_method_collection='always',  # Only collect payment method
-                    billing_address_collection='auto',  # Don't collect billing address
-                    shipping_address_collection=None,  # Don't collect shipping address
+                    customer_email=request.user.email,
+                    billing_address_collection='auto',
+                    shipping_address_collection=None,
                 )
-                print("Stripe session created successfully:", checkout_session.id)
 
                 try:
-                    print("Creating Payment object...")
-                    payment = Payment.objects.create(
-                        user=request.user,
-                        cloth=cloth,
-                        stripe_payment_intent=checkout_session.id,
-                        amount=cart_total,
-                        status='pending',
-                        payment_type='cart'
-                    )
-                    print("Payment object created successfully:", payment.id)
+                    for index, item in enumerate(rental_details):
+                        cloth = get_object_or_404(Clothes, id=item['cloth_id'])
+                        payment = Payment.objects.create(
+                            user=request.user,
+                            cloth=cloth,
+                            stripe_payment_intent=f"{checkout_session.id}_{index}",
+                            amount=item['price'],
+                            status='pending',
+                            payment_type='cart'
+                        )
 
                     return redirect(checkout_session.url)
 
                 except Exception as payment_error:
-                    print("Error creating Payment object:", str(payment_error))
                     raise Exception(f"Payment creation failed: {str(payment_error)}")
 
             except stripe.error.StripeError as stripe_error:
-                print("Stripe error:", str(stripe_error))
                 raise Exception(f"Stripe error: {str(stripe_error)}")
 
         except Clothes.DoesNotExist as cloth_error:
-            print("Clothes not found:", str(cloth_error))
             raise Exception(f"Item not found: {str(cloth_error)}")
 
     except Exception as e:
-        print("Final error:", str(e))
         messages.error(request, str(e))
         return redirect('cart')
     
-
 @login_required
 def cart_payment_success(request):
-    """
-    Handle successful cart payment and create rental records
-    """
     try:
         rental_details = request.session.get('cart_rental_details', [])
         rentals_created = []
 
+        cart, created = Cart.objects.get_or_create(user=request.user)
+
         for item in rental_details:
-            cloth = get_object_or_404(Clothes, id=item['cloth_id'])
-            
-            rental = Rental.objects.create(
+            try:
+                cloth = get_object_or_404(Clothes, id=item['cloth_id'])
+
+                cart_item = CartItem.objects.filter(cart=cart, clothes=cloth).first()
+                if not cart_item:
+                    messages.error(request, f"Item {cloth.name} not found in the cart.")
+                    continue
+
+                quantity = cart_item.quantity
+
+                if cloth.stock >= quantity:
+                    cloth.stock -= quantity
+                    cloth.save()
+                else:
+                    messages.error(request, f"Sorry, {cloth.name} is out of stock.")
+                    continue
+
+                rental_date = datetime.strptime(item['rental_date'], '%Y-%m-%d').date()
+                return_date = datetime.strptime(item['return_date'], '%Y-%m-%d').date()
+
+                rental = Rental.objects.create(
+                    user=request.user,
+                    clothe=cloth,
+                    duration=item['duration'],
+                    rental_date=rental_date,
+                    return_date=return_date,
+                    total_price=item['price'],
+                    status='active'
+                )
+                rentals_created.append(rental)
+
+            except Exception as e:
+                messages.error(request, f"Error creating rental for item {item['cloth_id']}: {str(e)}")
+                continue
+
+        stripe_session_id = request.session.get('stripe_session_id')
+        if stripe_session_id:
+            Payment.objects.filter(
                 user=request.user,
-                clothe=cloth,
-                duration=item['duration'],
-                rental_date=item['rental_date'],
-                return_date=item['return_date'],
-                total_price=item['price'],
-                status='active'
-            )
-            rentals_created.append(rental)
+                status='pending',
+                payment_type='cart',
+                stripe_payment_intent__startswith=stripe_session_id
+            ).update(status='completed')
 
-        # Update payment status
-        Payment.objects.filter(
-            user=request.user,
-            status='pending',
-            payment_type='cart'
-        ).update(status='completed')
+        cart.items.all().delete()
 
-        # Clear session
-        del request.session['cart_rental_details']
+        if 'cart_rental_details' in request.session:
+            del request.session['cart_rental_details']
 
-        messages.success(request, 'Cart payment successful! Your rentals have been created.')
         return render(request, 'payments/cart_success.html', {
             'rentals': rentals_created
         })
@@ -244,28 +254,32 @@ def cart_payment_success(request):
 def payment_success(request):
     cloth_id = request.GET.get('cloth_id')
     duration = request.GET.get('duration')
-    rental_date_str = request.GET.get('rental_date')  # Get as string
-    return_date_str = request.GET.get('return_date')  # Get as string
+    rental_date_str = request.GET.get('rental_date')
+    return_date_str = request.GET.get('return_date')
     total_price = request.GET.get('total_price')
 
-    # Convert strings to datetime.date objects
     rental_date = datetime.strptime(rental_date_str, '%Y-%m-%d').date()
     return_date = datetime.strptime(return_date_str, '%Y-%m-%d').date()
 
-    clothe = Clothes.objects.get(id=cloth_id)
-    
-    # Create rental record
+    clothe = get_object_or_404(Clothes, id=cloth_id)
+
+    if clothe.stock > 0:
+        clothe.stock -= 1
+        clothe.save()
+    else:
+        messages.error(request, f"Sorry, {clothe.name} is out of stock.")
+        return redirect('cart')
+
     rental = Rental.objects.create(
         user=request.user,
         clothe=clothe,
         duration=duration,
-        rental_date=rental_date,  # Use datetime.date object
-        return_date=return_date,  # Use datetime.date object
+        rental_date=rental_date, 
+        return_date=return_date,  
         total_price=total_price,
         status='active'
     )
 
-    # Update Payment status
     Payment.objects.filter(
         user=request.user, 
         cloth_id=cloth_id, 
@@ -273,30 +287,25 @@ def payment_success(request):
     ).update(status='completed')
 
     return render(request, 'payments/success.html', {'rental': rental})
+
 def payment_cancel(request):
     return render(request, 'payments/cancel.html')
 
 @login_required
 def extension_success(request):
-    """
-    Handle successful rental extension payment
-    """
     rental_id = request.GET.get('rental_id')
     days_to_extend = int(request.GET.get('days', 0))
     extension_price = float(request.GET.get('extension_price', 0))
 
     try:
-        # Get the rental
         rental = Rental.objects.get(id=rental_id, user=request.user)
 
-        # Update rental details
         rental.return_date += timedelta(days=days_to_extend)
         rental.is_extended = True 
         rental.extended_return_date = rental.return_date
         rental.total_price += Decimal(extension_price) 
         rental.save()
         
-        # Update payment status
         Payment.objects.filter(
             user=request.user,
             cloth_id=rental.clothe.id,
