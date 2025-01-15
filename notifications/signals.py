@@ -9,7 +9,6 @@ from .services import EmailService
 @receiver(post_save, sender=Rental)
 def create_rental_notifications(sender, instance, created, **kwargs):
     if created:
-        # Create return reminder notification (1 day before return date)
         reminder_date = instance.return_date - timedelta(days=1)
         notification = RentalNotification.objects.create(
             rental=instance,
@@ -17,5 +16,3 @@ def create_rental_notifications(sender, instance, created, **kwargs):
             status='pending',
             scheduled_date=timezone.make_aware(timezone.datetime.combine(reminder_date, timezone.datetime.min.time()))
         )
-
-#

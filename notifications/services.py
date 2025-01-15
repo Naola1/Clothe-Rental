@@ -28,10 +28,8 @@ class EmailService:
         try:
             logger.info(f"Preparing return reminder for notification {notification.id}")
             
-            # Calculate days until return
             days_until_return = (notification.rental.return_date - timezone.now().date()).days
             
-            # Prepare email content
             subject = f"Return Reminder for {notification.rental.clothe.name}"
             message = (
                 f"Dear {notification.rental.user.username},\n\n"
@@ -42,21 +40,19 @@ class EmailService:
                 f"Thank you for using our service!"
             )
             
-            # Send email
             result = EmailService.send_email(
                 notification.rental.user.email,
                 subject,
                 message
             )
             
-            if isinstance(result, str):  # If result is error message
+            if isinstance(result, str):  
                 logger.error(f"Failed to send notification {notification.id}: {result}")
                 notification.status = 'failed'
                 notification.error_message = result
                 notification.save()
                 return False
             
-            # Update notification status on success
             logger.info(f"Successfully sent notification {notification.id}")
             notification.status = 'sent'
             notification.sent_date = timezone.now()

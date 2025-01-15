@@ -36,7 +36,6 @@ class NotificationTests(TestCase):
             availability=True
         )
         
-        # Create rental with future return date
         self.rental = Rental.objects.create(
             user=self.user,
             clothe=self.clothe,
@@ -64,15 +63,12 @@ class NotificationTests(TestCase):
         """Test sending reminder before the scheduled date"""
         mock_send_email.return_value = True
         
-        # Set rental return date to 3 days from now
         self.rental.return_date = timezone.now().date() + timedelta(days=3)
         self.rental.save()
         
-        # Update notification scheduled date
         self.notification.scheduled_date = timezone.now() + timedelta(days=2)
         self.notification.save()
         
-        # Send reminder
         result = EmailService.send_return_reminder(self.notification)
         
         self.assertTrue(result)
