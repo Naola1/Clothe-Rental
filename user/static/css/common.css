@@ -46,19 +46,19 @@ body {
 .input-field {
     width: 100%;
     padding: 15px;
-    border: 2px solid #58a6ff; /* Border color */
+    border: 2px solid #58a6ff; 
     border-radius: 5px;
-    background-color: #e0f7fa; /* Light background color for differentiation */
-    color: #1a202c; /* Text color */
+    background-color: #e0f7fa; 
+    color: #1a202c; 
     transition: border-color 0.3s;
     height: 50px; 
     box-sizing: border-box; 
 }
 
 .input-field:focus {
-    border-color: #0056b3; /* Darker border on focus */
+    border-color: #0056b3; 
     outline: none;
-    background-color: #ffffff; /* Optional: change background on focus */
+    background-color: #ffffff; 
 }
 
 .label {

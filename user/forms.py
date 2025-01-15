@@ -2,7 +2,6 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 
-# Get the custom User model
 User = get_user_model()
 
 class UserRegistrationForm(forms.ModelForm):
@@ -79,7 +78,6 @@ class UserProfileUpdateForm(forms.ModelForm):
 
     def clean_username(self):
         username = self.cleaned_data['username']
-        # Check if username is unique, excluding current user
         if User.objects.exclude(pk=self.instance.pk).filter(username=username).exists():
             raise forms.ValidationError("This username is already in use.")
         return username

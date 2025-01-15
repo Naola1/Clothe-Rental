@@ -11,12 +11,9 @@ from django.contrib import messages
 from django.conf import settings
 from .utils import generate_token
 from django.core.mail import EmailMessage
-from django.conf import settings
 
 from .forms import LoginForm, UserRegistrationForm, UserProfileUpdateForm
-from .models import User
 
-# Get the custom User model
 User = get_user_model()
 
 def send_activation_email(user, request):
@@ -35,8 +32,6 @@ def send_activation_email(user, request):
     except Exception as e:
         print(f"Failed to send email: {e}")
 
-
-
 def register_view(request):
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
@@ -47,12 +42,9 @@ def register_view(request):
             send_activation_email(user, request)
             messages.success(request, 'We sent you an email to verify your account')
             return redirect('login')
-        # If form is not valid, the errors will be passed to the template
     else:
         form = UserRegistrationForm()
-
     return render(request, 'user/register.html', {'form': form})
-
 
 def activate_user(request, uidb64, token):
     try:
@@ -68,32 +60,24 @@ def activate_user(request, uidb64, token):
         return redirect('login')
     else:
         messages.error(request, 'Invalid activation link.')
-        return redirect('login')    
-
+        return redirect('login')
 
 def login_view(request):
     if request.method == 'POST':
         form = LoginForm(request.POST)
         if form.is_valid():
-            # Authenticate user
             user = authenticate(request, email=form.cleaned_data['email'], password=form.cleaned_data['password'])
             if user:
-                # Check if email is verified
                 if not user.is_email_verified:
                     form.add_error(None, 'Email not verified. Please check your email for the verification link.')
                     return render(request, 'user/login.html', {'form': form})
-                
-                # Log in the user
                 login(request, user)
                 return redirect('home')
             else:
                 form.add_error(None, 'Invalid email or password.')
     else:
         form = LoginForm()
-    
     return render(request, 'user/login.html', {'form': form})
-
-
 
 @login_required
 def logout_view(request):
@@ -116,7 +100,6 @@ def forgot_password_view(request):
         form = PasswordResetForm()
     return render(request, "user/forgot_password.html", {"form": form})
 
-
 def reset_password_view(request, uidb64, token):
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
@@ -138,7 +121,6 @@ def reset_password_view(request, uidb64, token):
     messages.error(request, "Invalid or expired reset password link.")
     return redirect("forgot_password")
 
-
 def send_password_reset_email(request, user):
     subject = "Password Reset Requested"
     email_template_name = "user/password_reset_email.html"
@@ -149,23 +131,17 @@ def send_password_reset_email(request, user):
         "token": default_token_generator.make_token(user),
         "protocol": "http" if settings.DEBUG else "https",
     }
-    
     email_content = render_to_string(email_template_name, context)
-    
-    # Create the email using EmailMessage
     email = EmailMessage(subject, email_content, settings.EMAIL_HOST_USER, [user.email])
-    email.content_subtype = 'html'  # Set the content type to HTML
-    
+    email.content_subtype = 'html'
     try:
-        email.send()  # Send the email
+        email.send()
     except Exception as e:
         print(f"Failed to send email: {e}")
-
 
 @login_required
 def profile_view(request):
     return render(request, 'user/profile.html', {'user': request.user})
-
 
 @login_required
 def edit_profile_view(request):
@@ -179,14 +155,13 @@ def edit_profile_view(request):
         form = UserProfileUpdateForm(instance=request.user)
     return render(request, 'user/edit_profile.html', {'form': form})
 
-
 @login_required
 def change_password_view(request):
     if request.method == 'POST':
         form = PasswordChangeForm(request.user, request.POST)
         if form.is_valid():
             user = form.save()
-            update_session_auth_hash(request, user)  
+            update_session_auth_hash(request, user)
             messages.success(request, 'Password updated successfully.')
             return redirect('profile')
         else:
@@ -195,5 +170,4 @@ def change_password_view(request):
                     messages.error(request, f"{field.capitalize()}: {error}")
     else:
         form = PasswordChangeForm(request.user)
-    
     return render(request, 'user/change_password.html', {'form': form})
