@@ -1,4 +1,3 @@
-# notifications/management/commands/check_notifications.py
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from datetime import timedelta
@@ -11,7 +10,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         now = timezone.now()
         
-        # Get pending notifications that are due
         pending_notifications = RentalNotification.objects.filter(
             status='pending',
             scheduled_date__lte=now
@@ -20,7 +18,6 @@ class Command(BaseCommand):
         for notification in pending_notifications:
             if notification.notification_type == 'return_reminder':
                 EmailService.send_return_reminder(notification)
-            # Add other notification types as needed
 
         self.stdout.write(
             self.style.SUCCESS(
