@@ -15,10 +15,6 @@ from .filters import ClotheFilter
 
 
 def get_all_child_categories(category):
-    """
-    Recursively get all child categories of a given category.
-    Useful for filtering clothes within subcategories.
-    """
     children = category.children.all()
     all_children = list(children)
     for child in children:
@@ -27,35 +23,26 @@ def get_all_child_categories(category):
 
 
 def home_view(request):
-    """
-    Displays the homepage with available clothes, filters, and search functionality.
-    Includes pagination for clothes and highlights the latest additions.
-    """
-    # Fetch clothes with stock available
     available_clothes = Clothes.objects.filter(stock__gt=0)
-    latest_clothes = available_clothes.order_by('-created_at')[:10]
+    latest_clothes = available_clothes.order_by('-created_at')[:15]
 
-    # Apply filters and search
     filterset = ClotheFilter(request.GET, queryset=available_clothes)
     search_query = request.GET.get('search', '').strip()
     category_slug = request.GET.get('category', '')
 
     if search_query:
-        # Search clothes by name, description, or category
         clothes = filterset.qs.filter(
             Q(name__icontains=search_query) |
             Q(description__icontains=search_query) |
             Q(category__name__icontains=search_query)
         )
     elif category_slug:
-        # Filter clothes by category and its children
         category = get_object_or_404(Category, slug=category_slug)
         all_categories = [category] + get_all_child_categories(category)
         clothes = filterset.qs.filter(category__in=all_categories)
     else:
         clothes = filterset.qs
 
-    # Paginate the results
     paginator = Paginator(clothes, 10)
     page_number = request.GET.get('page', 1)
     try:
@@ -65,7 +52,6 @@ def home_view(request):
     except EmptyPage:
         page_obj = paginator.page(paginator.num_pages)
 
-    # Show the main banner image if no search or category filter is applied
     show_main_image = not search_query and not category_slug
 
     context = {
@@ -80,14 +66,8 @@ def home_view(request):
 
 
 def cloth_detail_view(request, cloth_id):
-    """
-    Displays the details of a single cloth item along with related items and a rental form.
-    """
-    # Fetch the cloth item and related items
     cloth = get_object_or_404(Clothes, id=cloth_id)
     related_clothes_list = Clothes.objects.filter(category=cloth.category).exclude(id=cloth_id)
-
-    # Paginate related items
     paginator = Paginator(related_clothes_list, 10)
     page_number = request.GET.get('page', 1)
     try:
@@ -97,13 +77,11 @@ def cloth_detail_view(request, cloth_id):
     except EmptyPage:
         related_clothes = paginator.page(paginator.num_pages)
 
-    # Check for existing rentals for authenticated users
     form = RentalForm()
     existing_rental = None
     if request.user.is_authenticated:
         existing_rental = Rental.objects.filter(user=request.user, clothe_id=cloth.id, status='active').first()
 
-    # Handle rental form submission
     if request.method == "POST" and request.user.is_authenticated:
         form = RentalForm(request.POST)
         if existing_rental:
@@ -115,7 +93,6 @@ def cloth_detail_view(request, cloth_id):
                 'cloth_id': cloth.id,
                 'total_price': form.cleaned_data['duration'] * cloth.price
             })
-            # Redirect to the payment process
             return redirect(
                 'initiate_payment',
                 cloth_id=cloth.id,
@@ -140,9 +117,6 @@ def cloth_detail_view(request, cloth_id):
 
 @login_required
 def rented_items(request):
-    """
-    Displays the list of items rented by the logged-in user.
-    """
     rentals = Rental.objects.filter(user=request.user)
     return render(request, 'shop/rented_items.html', {'rentals': rentals})
 
@@ -150,19 +124,14 @@ def rented_items(request):
 @csrf_protect
 @login_required
 def extend_rental(request, rental_id):
-    """
-    Allows the user to extend the rental period for an item.
-    """
     rental = get_object_or_404(Rental, pk=rental_id, user=request.user)
     cloth = rental.clothe
 
-    # Calculate new return date and extension price
     days_to_extend = int(request.POST.get('days', 0))
     original_return_date = rental.return_date
     new_return_date = original_return_date + timedelta(days=days_to_extend)
     extension_price = days_to_extend * cloth.price
 
-    # Redirect to the payment process for the extension
     return redirect(
         'initiate_payment',
         cloth_id=cloth.id,
@@ -176,24 +145,18 @@ def extend_rental(request, rental_id):
 
 @login_required
 def add_to_cart(request, cloth_id):
-    """
-    Adds a cloth item to the user's cart. If the item already exists, increments the quantity.
-    """
     cloth = get_object_or_404(Clothes, id=cloth_id)
     cart, created = Cart.objects.get_or_create(user=request.user)
     cart_item, created = CartItem.objects.get_or_create(cart=cart, clothes=cloth)
 
     if not created:
-        cart_item.quantity += 1  # Increment the quantity
+        cart_item.quantity += 1
     cart_item.save()
-    return redirect('cart')  # Redirect to the cart page
+    return redirect('cart')
 
 
 @login_required
 def cart_view(request):
-    """
-    Displays the contents of the user's cart and calculates the total price.
-    """
     cart = get_object_or_404(Cart, user=request.user)
     today_date = timezone.now().date()
     
@@ -203,7 +166,7 @@ def cart_view(request):
     if cart_items:
         max_duration = max(item.quantity for item in cart_items)
     else:
-        max_duration = 0  # or handle it as needed
+        max_duration = 0
 
     return_date = today_date + timedelta(days=max_duration)
 
@@ -218,9 +181,6 @@ def cart_view(request):
 
 @login_required
 def update_cart_item(request):
-    """
-    Updates the quantity of a specific cart item.
-    """
     if request.method == 'POST':
         data = json.loads(request.body)
         item_id = data.get('item_id')
@@ -239,17 +199,12 @@ def update_cart_item(request):
 
 @login_required
 def remove_from_cart(request, cloth_id):
-    """
-    Removes an item from the user's cart.
-    If the cart becomes empty, deletes the cart as well.
-    """
     try:
         cart = get_object_or_404(Cart, user=request.user)
         cart_item = get_object_or_404(CartItem, cart=cart, clothes_id=cloth_id)
         item_name = cart_item.clothes.name
         cart_item.delete()
 
-        # Check if cart is now empty
         if not cart.items.exists():
             cart.delete()
             messages.info(request, "Your cart is now empty.")

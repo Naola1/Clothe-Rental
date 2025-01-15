@@ -32,10 +32,9 @@ class Clothes(models.Model):
     size = models.CharField(max_length=100)
     color = models.CharField(max_length=100)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    #price = models.IntegerField(default = 0)
     image = models.ImageField(upload_to="clothes/")
     availability = models.BooleanField(default=True)
-    rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)],blank=True, null=True)  # Rating from 1 to 5
+    rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)],blank=True, null=True) 
     stock = models.PositiveIntegerField()
     condition = models.CharField(max_length=50, default="new")
     views_count = models.IntegerField(default=0)
@@ -81,9 +80,7 @@ class Rental(models.Model):
 
 
     def can_rent_again(self, user, cloth):
-        """
-        Check if a user can rent this cloth again
-        """
+
         existing_rental = Rental.objects.filter(
             user=user, 
             clothe=cloth, 
@@ -105,6 +102,7 @@ class Rental(models.Model):
 class Cart(models.Model):
     user = models.ForeignKey('user.User', on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
 
     def get_total_price(self):
         """
@@ -129,3 +127,4 @@ class CartItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity}x {self.clothes.name}"
+    

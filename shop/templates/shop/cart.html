@@ -55,36 +55,58 @@
                         <thead>
                             <tr class="border-b">
                                 <th class="py-4 text-left">Product</th>
+                                <th class="py-4 text-left">Size</th> <!-- Added Size Column -->
                                 <th class="py-4 text-left">Price per day</th>
                                 <th class="py-4 text-left">Quantity</th>
                                 <th class="py-4 text-left">Total Price</th>
                                 <th class="py-4 text-left">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            {% for item in cart.items.all %}
-                                <tr class="border-b hover:bg-gray-100" data-item-id="{{ item.id }}">
-                                    <td class="py-4 px-2 flex items-center">
-                                        <img src="{{ item.clothes.image.url }}" alt="{{ item.clothes.name }}" class="h-16 w-16 object-cover rounded mr-4">
-                                        <span>{{ item.clothes.name }}</span>
-                                    </td>
-                                    <td class="py-4 px-2">${{ item.clothes.price }}</td>
-                                    <td class="py-4 px-2">
-                                        <div class="flex items-center">
-                                            <button class="bg-gray-200 text-gray-700 rounded-l px-2" onclick="changeQuantity('{{ item.id }}', -1)">-</button>
-                                            <input type="number" id="quantity-{{ item.id }}" value="{{ item.quantity }}" min="1" class="w-16 text-center border rounded" onchange="updateTotal('{{ item.id }}')">
-                                            <button class="bg-gray-200 text-gray-700 rounded-r px-2" onclick="changeQuantity('{{ item.id }}', 1)">+</button>
-                                        </div>
-                                    </td>
-                                    <td class="py-4 px-2" id="total-{{ item.id }}">${{ item.get_total_price }}</td>
-                                    <td class="py-4 px-2">
-                                        <form action="{% url 'remove_from_cart' item.clothes.id %}" method="post">
-                                            {% csrf_token %}
-                                            <button type="submit" class="text-red-500 hover:text-red-600">Remove</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            {% endfor %}
+                        {% for item in cart.items.all %}
+                        <tr class="border-b hover:bg-gray-100" data-item-id="{{ item.id }}">
+                            <td class="py-4 px-2 flex items-center">
+                                <img src="{{ item.clothes.image.url }}" alt="{{ item.clothes.name }}" class="h-16 w-16 object-cover rounded mr-4">
+                                <span>{{ item.clothes.name }}</span>
+                            </td>
+                            <td class="py-4 px-2">{{ item.clothes.size }}</td>
+                            <td class="py-4 px-2">${{ item.clothes.price }}</td>
+                            <td class="py-4 px-2">
+                                <div class="flex items-center">
+                                    <button 
+                                        class="bg-gray-200 text-gray-700 rounded-l px-2" 
+                                        onclick="changeQuantity('{{ item.id }}', -1, {{ item.clothes.stock }})"
+                                    >-</button>
+                                    <input 
+                                        type="number" 
+                                        id="quantity-{{ item.id }}" 
+                                        value="{{ item.quantity }}" 
+                                        min="1" 
+                                        max="{{ item.clothes.stock }}" 
+                                        class="w-16 text-center border rounded" 
+                                        onchange="validateQuantity('{{ item.id }}', {{ item.clothes.stock }})"
+                                        oninput="validateQuantity('{{ item.id }}', {{ item.clothes.stock }})"
+                                    >
+                                    <button 
+                                        class="bg-gray-200 text-gray-700 rounded-r px-2" 
+                                        onclick="changeQuantity('{{ item.id }}', 1, {{ item.clothes.stock }})"
+                                        id="increment-{{ item.id }}"
+                                        {% if item.quantity >= item.clothes.stock %}disabled{% endif %}
+                                    >+</button>
+                                </div>
+                                <!-- Stock availability message -->
+                                <span id="stock-error-{{ item.id }}" class="text-red-500 text-sm hidden">
+                                    Maximum quantity reached. Only {{ item.clothes.stock }} items available.
+                                </span>
+                            </td>
+                            <td class="py-4 px-2" id="total-{{ item.id }}">${{ item.get_total_price }}</td>
+                            <td class="py-4 px-2">
+                                <form action="{% url 'remove_from_cart' item.clothes.id %}" method="post">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-red-500 hover:text-red-600">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
                         </tbody>
                     </table>
 
@@ -185,7 +207,7 @@
                             </div>
                             <div>
                                 <label class="block mb-1 text-sm">Duration (days)</label>
-                                <input type="number" name="durations" min="1" value="1"
+                                <input type="number" name="durations_{{ item.clothes.id }}" min="1" value="1"
                                        class="w-full border rounded px-3 py-2 text-sm"
                                        onchange="calculateIndividualPrice('{{ item.clothes.id }}')">
                             </div>
@@ -224,159 +246,5 @@
 {% endblock %}
 
 {% block extra_js %}
-    <script>
-        function changeQuantity(itemId, change) {
-            const quantityInput = document.getElementById(`quantity-${itemId}`);
-            let newQuantity = parseInt(quantityInput.value) + change;
-            if (newQuantity < 1) newQuantity = 1; // Prevent negative quantity
-            quantityInput.value = newQuantity;
-            updateTotal(itemId);
-
-            // Send AJAX request to update quantity in backend
-            fetch('/cart/update/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({
-                    item_id: itemId,
-                    quantity: newQuantity
-                })
-            });
-        }
-
-        function updateTotal(itemId) {
-            const quantity = document.getElementById(`quantity-${itemId}`).value;
-            const pricePerDay = parseFloat(document.querySelector(`tr[data-item-id="${itemId}"] td:nth-child(2)`).textContent.replace('$', ''));
-            const totalPrice = (pricePerDay * quantity).toFixed(2);
-            document.getElementById(`total-${itemId}`).textContent = `$${totalPrice}`;
-
-            // Update subtotal and total
-            let subtotal = 0;
-            document.querySelectorAll('tbody tr').forEach(row => {
-                const total = parseFloat(row.querySelector('td:nth-child(4)').textContent.replace('$', ''));
-                subtotal += total;
-            });
-            document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
-            document.getElementById('total-price').textContent = `$${subtotal.toFixed(2)}`;
-            
-            // Update hidden total price input for payment
-            document.querySelector('input[name="cart_total"]').value = subtotal.toFixed(2);
-        }
-
-        // Helper function to get CSRF token
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-
-        function openCheckoutModal() {
-            document.getElementById('modalBackdrop').classList.add('active');
-            document.getElementById('checkoutModal').classList.add('active');
-        }
-
-        function closeModal() {
-            document.getElementById('modalBackdrop').classList.remove('active');
-            document.getElementById('checkoutModal').classList.remove('active');
-        }
-
-        function updateRentalType() {
-            const rentalType = document.querySelector('input[name="rental_type"]:checked').value;
-            const togetherSection = document.getElementById('togetherRental');
-            const individualSection = document.getElementById('individualRental');
-            
-            if (rentalType === 'together') {
-                togetherSection.classList.remove('hidden');
-                individualSection.classList.add('hidden');
-            } else {
-                togetherSection.classList.add('hidden');
-                individualSection.classList.remove('hidden');
-            }
-            updateTotalPrice();
-        }
-
-        function calculateReturnDate(input) {
-            const form = document.getElementById('rentalForm');
-            const startDateInput = form.querySelector('[name="rental_date"]');
-            const durationInput = form.querySelector('[name="duration"]');
-            
-            if (startDateInput.value && durationInput.value) {
-                const startDate = new Date(startDateInput.value);
-                const duration = parseInt(durationInput.value);
-                const returnDate = new Date(startDate);
-                returnDate.setDate(returnDate.getDate() + duration);
-                
-                form.querySelector('[name="return_date"]').value = returnDate.toISOString().split('T')[0];
-                
-                // Update all individual items with the same dates
-                document.querySelectorAll('#individualRental input[type="hidden"][name="cart_items"]').forEach(input => {
-                    const itemId = input.value;
-                    document.querySelector(`[name="rental_date_${itemId}"]`).value = startDateInput.value;
-                    document.querySelector(`[name="return_date_${itemId}"]`).value = returnDate.toISOString().split('T')[0];
-                    document.querySelector(`[name="durations"]`).value = duration;
-                });
-                
-                updateTotalPrice();
-            }
-        }
-
-        function calculateIndividualPrice(itemId) {
-            const startDateInput = document.querySelector(`[name="rental_date_${itemId}"]`);
-            const durationInput = document.querySelector(`[name="durations"]`);
-            const returnDateInput = document.querySelector(`[name="return_date_${itemId}"]`);
-            
-            if (startDateInput.value && durationInput.value) {
-                const startDate = new Date(startDateInput.value);
-                const duration = parseInt(durationInput.value);
-                const returnDate = new Date(startDate);
-                returnDate.setDate(returnDate.getDate() + duration);
-                
-                returnDateInput.value = returnDate.toISOString().split('T')[0];
-                
-                const pricePerDay = parseFloat(document.querySelector(`[name="price_${itemId}"]`).value);
-                const totalPrice = (pricePerDay * duration).toFixed(2);
-                document.getElementById(`total_${itemId}`).value = `$${totalPrice}`;
-                
-                updateTotalPrice();
-            }
-        }
-
-        function updateTotalPrice() {
-            const rentalType = document.querySelector('input[name="rental_type"]:checked').value;
-            let total = 0;
-
-            if (rentalType === 'together') {
-                const duration = parseInt(document.querySelector('[name="duration"]').value) || 1;
-                document.querySelectorAll('input[name="cart_items"]').forEach(input => {
-                    const itemId = input.value;
-                    const pricePerDay = parseFloat(document.querySelector(`[name="price_${itemId}"]`).value);
-                    total += pricePerDay * duration;
-                });
-            } else {
-                document.querySelectorAll('input[name="durations"]').forEach((input, index) => {
-                    const itemId = document.querySelectorAll('input[name="cart_items"]')[index].value;
-                    const duration = parseInt(input.value) || 1;
-                    const pricePerDay = parseFloat(document.querySelector(`[name="price_${itemId}"]`).value);
-                    total += pricePerDay * duration;
-                });
-            }
-
-            document.getElementById('modalTotal').textContent = `$${total.toFixed(2)}`;
-            document.querySelector('input[name="cart_total"]').value = total.toFixed(2);
-        }
-
-        // Close modal when clicking outside
-        document.getElementById('modalBackdrop').addEventListener('click', closeModal);
-    </script>
+    <script src="{% static 'js/cart.js' %}"> </script>
 {% endblock %}
